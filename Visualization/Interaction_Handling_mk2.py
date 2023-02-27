@@ -4,7 +4,7 @@ import gradio as gr
 import torch.nn as nn
 from torchvision import models
 
-from Render_Resnet18_custom_weights_mk2 import render, module_fill
+from render_mk2 import render, module_fill
 
 
 model = models.resnet18(weights=None)
