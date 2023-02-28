@@ -9,6 +9,8 @@ from render_mk2 import render, module_fill
 
 model = models.resnet18(weights=None)
 in_features = model.fc.in_features
+# Always reshape the last layer of any imported model to accomodate
+# dataset classes.
 model.fc = nn.Linear(in_features, 10)
 module_dict = module_fill(model)
 
@@ -26,7 +28,6 @@ def main():
     
     with gr.Blocks() as demo:
         gr.Markdown('Visualize a variety of objectives.', visible=True)
-        # TODO: complete work for WRT Classes
         list_of_objectives = ['DeepDream',
                               'Channel',
                               'Neuron',
@@ -54,7 +55,8 @@ def main():
                     layer_selection = gr.Radio(choices=list(module_dict.keys()),
                                                label='Layer')
                     # Objective class Channel or Neuron
-                    if objective_type == list_of_objectives[1] or objective_type == list_of_objectives[2]:
+                    if objective_type == list_of_objectives[1] \
+                        or objective_type == list_of_objectives[2]:
                         channel_selection = gr.Slider(0,
                                                       511,
                                                       step=1,
@@ -73,7 +75,8 @@ def main():
                                                   image_shape,
                                                   ]
                     # Objective class Interpolation or Joint Activation
-                    elif objective_type == list_of_objectives[3] or objective_type == list_of_objectives[4]:
+                    elif objective_type == list_of_objectives[3] \
+                        or objective_type == list_of_objectives[4]:
                         
                         layer_selection_2 = gr.Radio(choices=list(module_dict.keys()),
                                                      label='Second layer')
@@ -131,7 +134,27 @@ def main():
                                                   threshold,
                                                   image_shape,
                                                   ]
-                    # Objective classes Channel Weight and Direction
+                    # Objective class WRT Classes
+                    elif objective_type == list_of_objectives[6]:
+                        channel_selection = gr.Slider(0,
+                                                      511,
+                                                      step=1,
+                                                      label='Channel Number')
+                        image_shape = gr.Number(10,
+                                                precision=0,
+                                                visible=False)
+                        operator = gr.Radio(choices=[],
+                                            label='Available Operators',
+                                            visible=False)
+                        inputs[objective_type] = [type,
+                                                  operator,
+                                                  layer_selection,
+                                                  channel_selection,
+                                                  parameterization,
+                                                  threshold,
+                                                  image_shape,
+                                                  ]
+                    # Objective class DeepDream
                     else:
                         channel_selection = gr.Slider(0,
                                                       label='Channel Number',
@@ -157,9 +180,11 @@ def main():
                     buttons[objective_type] = gr.Button('Create')
                     output[objective_type] = gr.Image().style(height=224)
                     
-                    buttons[objective_type].click(render,
+                    start = buttons[objective_type].click(render,
                                                   inputs[objective_type],
                                                   output[objective_type])
+                    stop = gr.Button('Abort')
+                    stop.click(fn=None, inputs=None, outputs=None, cancels=[start])
                     
     demo.queue().launch()
 

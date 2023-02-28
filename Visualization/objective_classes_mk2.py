@@ -16,7 +16,7 @@ def operation(operator, loss1, loss2=torch.zeros(1,).to(device)):
         case '-':
             loss = loss1 - loss2
         case 'Negative':
-            loss = -100*loss1
+            loss =  - loss1
         case 'Positive':
             loss = loss1
         case _:
@@ -178,7 +178,7 @@ class WRT_Classes(Common):
         added to the first image of the batch (the value of which has already
         been reduced to a scalar).
 
-        1e-4 seems to yield the most legible results, since the logits need
+        1e-3 seems to yield the most legible results, since the logits need
         to be scaled, otherwise they overrule the visualization, obfuscating
         any other objective. 
         """

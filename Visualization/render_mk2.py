@@ -8,7 +8,7 @@ import torch.nn as nn
 
 from PIL import Image
 from torchvision import models
-# from tqdm import tqdm
+from tqdm import tqdm
 
 import image_classes
 import transformations
@@ -24,7 +24,7 @@ def render(type,
            image_shape,
            layer2=None,
            channel2=None,
-           progress=gr.Progress()
+           # progress=gr.Progress()
            ):
     """Customizable method creating visualizations based on 
         specified objectives and parameters.
@@ -111,10 +111,14 @@ def render(type,
             objective = Direction(module_dict[layer],
                                   direction=torch.rand(module_dict[layer].out_channels,
                                   device=device))
+        case 'WRT Classes':
+            objective = WRT_Classes(module_dict[layer],
+                                    channel,
+                                    model)
         case _:
             exit('No valid objective was selected from objective list.')
 
-    for _ in progress.tqdm(range(0, threshold), total=threshold):
+    for _ in tqdm(range(0, threshold), total=threshold):
     # for _ in range(0, threshold):
         def closure() -> torch.Tensor:
             optimizer.zero_grad()
