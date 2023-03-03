@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
+# logging = True
 
 def operation(operator, loss1, loss2=torch.zeros(1,).to(device)):
     match operator:
@@ -182,22 +182,28 @@ class WRT_Classes(Common):
         to be scaled, otherwise they overrule the visualization, obfuscating
         any other objective. 
         """
-    def __init__(self, layer, channel, model):
+    def __init__(self, layer, channel, layer_2, class_num, logging):
         super().__init__(layer)
         self.channel = channel
-        self.layer_2 = model.fc
+        self.layer_2 = layer_2
         self.hook_2 = self.layer_2.register_forward_hook(self.hook_function)
-        self.classes_num = model.fc.out_features
+        self.class_num = class_num
+        self.logging = logging
+        self.loss1 = {}
+        self.loss2 = {}
 
-    def __call__(self) -> torch.Tensor:
+    def __call__(self, index):
         if self.output[self.layer] is None or self.output[self.layer_2] is None:
             exit("Object callable only after forward pass!")
         # batch_number = list(self.output[self.layer].shape)[0]  # must always be 10
         channel_tensor = self.output[self.layer][:, self.channel]
-        sum_loss = torch.zeros(1).to(device)
-        for n in range(self.classes_num):
-            sum_loss -= channel_tensor[n].mean() + (self.output[self.layer_2][n, n])
-        return self.scaler * sum_loss
+        class_tensor = self.output[self.layer_2][:, self.class_num:self.class_num+1]
+        loss1 = -channel_tensor.mean()
+        loss2 = -abs(class_tensor.mean())
+        if self.logging and index in [16, 32, 64]:
+            self.loss1[f'iter{str(index)}'] = loss1.item()
+            self.loss2[f'iter{str(index)}'] = loss2.item()
+        return self.scaler * (loss1+loss2)
 
 
 

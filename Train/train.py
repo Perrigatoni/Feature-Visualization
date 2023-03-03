@@ -139,19 +139,19 @@ def train_model(model,
             if phase == 'test':
                 # print(confusion_accumulator)
                 confmat = ConfusionMatrixDisplay(confusion_accumulator,
-                                                 display_labels=['art_nouveau',
-                                                                 'baroque',
-                                                                 'expressionism',
-                                                                 'impressionism',
-                                                                 'post_impressionism',
-                                                                 'realism',
-                                                                 'renaissance',
-                                                                 'romanticism',
-                                                                 'surrealism',
-                                                                 'ukiyo-e'])
+                                                 display_labels=['art_n.',
+                                                                 'bar.',
+                                                                 'expres.',
+                                                                 'impres.',
+                                                                 'p_impres.',
+                                                                 'real.',
+                                                                 'ren.',
+                                                                 'rom.',
+                                                                 'sur.',
+                                                                 'ukiyo.'])
                 confmat.plot(xticks_rotation='vertical',
                              colorbar=False)
-                plt.show()
+                # plt.show()
 
             # Calculate total epoch loss
             epoch_loss = running_loss / \
@@ -186,6 +186,8 @@ def train_model(model,
                 print(confusion_accumulator)
                 best_acc = epoch_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
+                # Save the confmat as figure too.
+                confmat.figure_.savefig('bestconfmat.png')   # SAVE CONFUSION MATRIX TO ROOT DIRECTORY
                 # Check if save_path is defined to save state dictionary
                 # after each advancing epoch.
                 if save_path is not None:

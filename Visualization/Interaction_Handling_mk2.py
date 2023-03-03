@@ -4,7 +4,7 @@ import gradio as gr
 import torch.nn as nn
 from torchvision import models
 
-from render_mk2 import render, module_fill
+from render_mk2 import Render_Class, module_fill
 
 
 model = models.resnet18(weights=None)
@@ -179,59 +179,16 @@ def main():
                                             outputs=channel_selection)
                     buttons[objective_type] = gr.Button('Create')
                     output[objective_type] = gr.Image().style(height=224)
-                    
-                    start = buttons[objective_type].click(render,
+                    render = Render_Class()
+                    start = buttons[objective_type].click(render.render,
                                                   inputs[objective_type],
                                                   output[objective_type])
+
                     stop = gr.Button('Abort')
-                    stop.click(fn=None, inputs=None, outputs=None, cancels=[start])
+                    stop.click(fn=render.set_flag, inputs=None, outputs=None, cancels=[start])
+                    # TODO: Check if cancel can interrupt a function execution...
                     
-    demo.queue().launch()
-
-
-
-    #     with gr.Tab('Channel Objective') as channel_tab:
-    #         type = gr.Markdown(channel_tab.label, visible=False)  # jankiest of solutions but alas...
-    #         layer_selection = gr.Radio(choices=list(module_dict.keys()), label='Layer')
-    #         channel_selection = gr.Slider(0, 512, label='Channel Number')
-    #         parameterization = gr.Radio(choices=['fft', 'pixel'], label='Parameterization')
-    #         threshold = gr.Slider(64, 2048, step=64, label='Number of Iterations')
-    #         image_shape = gr.Slider(1, 10, step=1, label='Images to Produce')
-            
-    #         channel_inputs = [type,
-    #                             layer_selection,
-    #                             channel_selection,
-    #                             parameterization,
-    #                             threshold,
-    #                             image_shape
-    #                             ]
-    #         channel_button = gr.Button('Create')
-            
-    
-
-    #     with gr.Tab('Neuron Objective') as neuron_tab:
-    #         type = gr.Markdown(neuron_tab.label, visible=False)
-    #         layer_selection = gr.Radio(choices=list(module_dict.keys()), label='Layer Selection')
-    #         channel_selection = gr.Slider(0, 512, label='Channel Number')
-    #         parameterization = gr.Radio(choices=['fft', 'pixel'], label='Parameterization')
-    #         threshold = gr.Slider(64, 2048, step=64, label='Number of Iterations')
-    #         image_shape = gr.Slider(1, 10, step=1, label='Images to Produce')
-
-    #         neuron_inputs = [type,
-    #                             layer_selection,
-    #                             channel_selection,
-    #                             parameterization,
-    #                             threshold,
-    #                             image_shape
-    #                             ]
-    #         neuron_button = gr.Button('Create')
-            
-    #     output = gr.Image().style(height=224)
-        
-    #     channel_button.click(render, channel_inputs, output)
-    #     neuron_button.click(render, neuron_inputs, output)
-    # demo.launch()
-
+    demo.queue(concurrency_count=1, max_size=1).launch()
 
 
 if __name__ == "__main__":

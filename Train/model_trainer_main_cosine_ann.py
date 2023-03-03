@@ -27,7 +27,7 @@ def main():
     print(f"Device used: {device}")
 
     # Hyper Parameters
-    test_num = 45
+    test_num = 47
     log_with_TB = True
     parameters_saved_as = "test"+str(test_num)+"_epoch{}.pth"
     model_name = "resnet"
@@ -37,7 +37,7 @@ def main():
     feature_extract = False
     pretrained = False
     change_activ_func = True
-    starting_lr = 0.008
+    starting_lr = 0.04
     weight_decay = 0.01
 
     # Specify directories
@@ -61,9 +61,9 @@ def main():
         'train': T.Compose([T.RandomResizedCrop(input_size),
                             T.RandomHorizontalFlip(),
                             T.RandomVerticalFlip(),
-                            T.RandomAffine(degrees=0,
-                                           translate=(0.1, 0.1),
-                                           scale=(0.7, 1.3),
+                            T.RandomAffine(degrees=10,
+                                           translate=(0.05, 0.05),
+                                           scale=(0.8, 1.2),
                                            interpolation=InterpolationMode.BILINEAR),
                             T.ToTensor(),
                             T.Normalize([0.5162, 0.4644, 0.3975],

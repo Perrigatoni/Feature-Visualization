@@ -5,7 +5,7 @@ import numpy as np
 # import gradio as gr
 import torch
 import torch.nn as nn
-
+import pandas as pd
 from PIL import Image
 from torchvision import models
 from tqdm import tqdm
@@ -13,7 +13,7 @@ from tqdm import tqdm
 import image_classes
 import transformations
 
-from objective_classes_mk2 import *
+from objective_classes_temporary import *
 
 
 
@@ -30,13 +30,13 @@ def main():
     """
 
     # Hyper Parameters
-    threshold = 256
+    threshold = 1025
     parameterization = 'fft'
     # Initializing the shape.
     shape = [1, 3, 224, 224]
     multiple_objectives = False  # in case of Mixing objs
-    operator = 'Negative'
-    layer_name = 'layer3 0 conv2'
+    operator = 'Positive'
+    layer_name = 'layer2 0 conv2'
     sec_layer_name = 'layer3 0 conv2'
     
 
@@ -60,7 +60,8 @@ def main():
     module_dict = module_fill(model)
 
     # Remove loop if you are not interested in creating directories.
-    for channel_n in range(0, module_dict[layer_name].out_channels):
+    log_list = []
+    for channel_n in range(0, 30):
         
         # Create image object ( image to parameterize, starting from noise)
         if parameterization == "pixel":
@@ -79,36 +80,36 @@ def main():
 
         objective = Channel_Obj(layer=module_dict[layer_name],
                                 channel=channel_n)
-        secondary_obj = Channel_Obj(layer=module_dict[sec_layer_name],
-                                    channel=0)
-        for _ in tqdm(range(0, threshold), total=threshold):
-        # for _ in range(0, threshold):
+        log_dict = {}
+        # for i in tqdm(range(0, threshold), total=threshold):    
+        for i in range(0, threshold):
             def closure() -> torch.Tensor:
                 optimizer.zero_grad()
                 # Forward pass
                 model(transformations.standard_transforms(image_object()))
-                if multiple_objectives:
-                    loss = operation(operator,
-                                     objective(),
-                                     secondary_obj())
-                    # print(loss)
-                else:
-                    loss = operation(operator,
-                                     objective())
-                    # print(loss)
-                loss.backward()
+                
+                loss = operation(operator, objective())
+                if i in [128, 512, 1024]:    
+                    log_dict[f'iter_{str(i)}'] = loss.item()
+                print(f'Loss @ step {i} :{loss.item():.4f}')
                 loss.backward()
                 return loss
 
             optimizer.step(closure)
-
+        log_list.append(log_dict)
         # Display final image after optimization
         # display_out(image_object())
-        save_path = r"C:\Users\Noel\Documents\THESIS"\
-            rf"\Outputs_Feature_Visualization\test40\{layer_name.replace(' ', '_')}"
-        save_image(image_object(),
-                   path=save_path,
-                   name=f"/{str(channel_n)}_{operator}.jpg")
+        # save_path = r"C:\Users\Noel\Documents\THESIS"\
+        #     rf"\Outputs_Feature_Visualization\test40\{layer_name.replace(' ', '_')}"
+        # save_image(image_object(),
+        #            path=save_path,
+        #            name=f"/{str(channel_n)}_{operator}.jpg")
+
+    # print(layer_losses)
+    df = pd.DataFrame(log_list, copy=False)
+    df.to_parquet(f'{str(layer_name)}.parquet')
+    # df.to_parquet(f'fc.parquet')
+
 
 # Convert Tensor to numpy array.
 def tensor_to_array(tensor: torch.Tensor) -> np.ndarray:  # add more
