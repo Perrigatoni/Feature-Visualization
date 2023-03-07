@@ -68,6 +68,9 @@ class Channel_Obj(Common):
     def __call__(self) -> torch.Tensor:
         if self.output[self.layer] is None:
             exit("Object callable only after forward pass!")
+        # if isinstance(self.layer, nn.Linear):
+        #     loss_local =  torch.nn.functional.softmax(self.output[self.layer], dim=1)[:, self.channel]
+        # else:
         channel_tensor = self.output[self.layer][:, self.channel]
         loss_local = -channel_tensor.mean()
         return self.scaler * loss_local
@@ -196,7 +199,7 @@ class WRT_Classes(Common):
         channel_tensor = self.output[self.layer][:, self.channel]
         sum_loss = torch.zeros(1).to(device)
         for n in range(self.classes_num):
-            sum_loss -= channel_tensor[n].mean() + (self.output[self.layer_2][n, n])
+            sum_loss -= channel_tensor[n].mean() + (1.5e-3 * self.output[self.layer_2][n, n])
         return self.scaler * sum_loss
 
 

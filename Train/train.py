@@ -86,28 +86,32 @@ def train_model(model,
                     # Get model outputs and calsulate loss.
                     # Define a special case for inception, accomodating
                     # the aux output during training phase.
-                    if is_inception and phase == 'train':
-                        outputs, aux_outputs = model(inputs)  # actual forward
-                        # pass, exactly as is, returning the output prediction.
-                        # Loss calculation based on the predetermined loss
-                        # function.
-                        # This loss is calculated from the difference
-                        # between the prediction and the actual output.
-                        loss1 = criterion(outputs, labels)
-                        loss2 = criterion(aux_outputs, labels)
-                        loss = loss1 + 0.4 * loss2
-                    else:  # Accomodate any other case of model.
-                        # Forward pass, equal to calling model.forward(inputs)
-                        # but avoid actually calling the forward
-                        # method like this!
+                    # Accomodate any other case of model.
+                    # Forward pass, equal to calling model.forward(inputs)
+                    # but avoid actually calling the forward
+                    # method like this!
+                    beta = 1
+                    if np.random.rand(1) < 0.5:
+                        lam = np.random.beta(beta, beta)
+                        rand_index = torch.randperm(inputs.size()[0]).cuda()
+                        target_a = labels
+                        target_b = labels[rand_index]
+                        bbx1, bby1, bbx2, bby2 = rand_bbox(inputs.size(), lam)
+                        inputs[:, :, bbx1:bbx2, bby1:bby2] = inputs[rand_index, :, bbx1:bbx2, bby1:bby2]
+                        # adjust lambda to exactly match pixel ratio
+                        lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (inputs.size()[-1] * inputs.size()[-2]))
                         outputs = model(inputs)
                         """ DO NOT CALL THE FORWARD METHOD,
                             IT CAN AFFECT THE HOOKS STORED
                             DURING THE FORWARD PASS!"""
+                        # loss = criterion(outputs, labels)
+                        loss = criterion(outputs, target_a) * lam + criterion(outputs, target_b) * (1. - lam)
+                        # change this dim to simply ,1 if it doesn't comply
+                        _, preds = torch.max(outputs, dim=1)
+                    else:
+                        outputs = model(inputs)
                         loss = criterion(outputs, labels)
-                    # change this dim to simply ,1 if it doesn't comply
-                    _, preds = torch.max(outputs, dim=1)
-
+                        _, preds = torch.max(outputs, dim=1)
                     """ Confusion Matrix """
                     if phase == 'test':
                         # Confusion matrix for that batch
@@ -151,8 +155,8 @@ def train_model(model,
                                                                  'ukiyo.'])
                 confmat.plot(xticks_rotation='vertical',
                              colorbar=False)
-                # plt.show()
-
+                plt.show()
+                
             # Calculate total epoch loss
             epoch_loss = running_loss / \
                 len(dataloaders[phase].dataset)
@@ -188,6 +192,7 @@ def train_model(model,
                 best_model_wts = copy.deepcopy(model.state_dict())
                 # Save the confmat as figure too.
                 confmat.figure_.savefig('bestconfmat.png')   # SAVE CONFUSION MATRIX TO ROOT DIRECTORY
+                plt.close()
                 # Check if save_path is defined to save state dictionary
                 # after each advancing epoch.
                 if save_path is not None:
@@ -217,3 +222,22 @@ def train_model(model,
     # Load best model weights.
     model.load_state_dict(best_model_wts)
     return model, test_acc_history
+
+
+def rand_bbox(size, lam):
+    W = size[2]
+    H = size[3]
+    cut_rat = np.sqrt(1. - lam)
+    cut_w = np.int_(W * cut_rat)
+    cut_h = np.int_(H * cut_rat)
+
+    # uniform
+    cx = np.random.randint(W)
+    cy = np.random.randint(H)
+
+    bbx1 = np.clip(cx - cut_w // 2, 0, W)
+    bby1 = np.clip(cy - cut_h // 2, 0, H)
+    bbx2 = np.clip(cx + cut_w // 2, 0, W)
+    bby2 = np.clip(cy + cut_h // 2, 0, H)
+
+    return bbx1, bby1, bbx2, bby2

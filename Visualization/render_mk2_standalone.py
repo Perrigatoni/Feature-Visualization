@@ -30,14 +30,14 @@ def main():
     """
 
     # Hyper Parameters
-    threshold = 256
+    threshold = 512
     parameterization = 'fft'
     # Initializing the shape.
     shape = [1, 3, 224, 224]
     multiple_objectives = False  # in case of Mixing objs
-    operator = 'Negative'
-    layer_name = 'layer3 0 conv2'
-    sec_layer_name = 'layer3 0 conv2'
+    operator = 'Positive'
+    layer_name = 'fc'
+    sec_layer_name = 'fc'
     
 
     # Execute utilizing GPU if available
@@ -60,7 +60,7 @@ def main():
     module_dict = module_fill(model)
 
     # Remove loop if you are not interested in creating directories.
-    for channel_n in range(0, module_dict[layer_name].out_channels):
+    for channel_n in range(0,10): # module_dict[layer_name].out_channels):
         
         # Create image object ( image to parameterize, starting from noise)
         if parameterization == "pixel":
@@ -80,7 +80,7 @@ def main():
         objective = Channel_Obj(layer=module_dict[layer_name],
                                 channel=channel_n)
         secondary_obj = Channel_Obj(layer=module_dict[sec_layer_name],
-                                    channel=0)
+                                    channel=9)
         for _ in tqdm(range(0, threshold), total=threshold):
         # for _ in range(0, threshold):
             def closure() -> torch.Tensor:
@@ -96,7 +96,6 @@ def main():
                     loss = operation(operator,
                                      objective())
                     # print(loss)
-                loss.backward()
                 loss.backward()
                 return loss
 
