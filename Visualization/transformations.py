@@ -35,8 +35,8 @@ def standard_transforms(tensor) -> torch.Tensor:
                       scale=scale_selected, shear=[0])
     # Rotate the image with weighted degrees selection.
     # Reminder!!! Angles need to be int, so get the item from numpy.
-    angles = np.arange(0, 360, 15)
-    probability_array = np.linspace(1, 0, 24)
+    angles = np.arange(0, 90, 15)
+    probability_array = np.linspace(1, 0, 6)
     probability_array[0] += 10  # modify 0 angle to have higher probability
     probabilities = probability_array / sum(probability_array)
     selected_angle = np.random.choice(angles, p=probabilities)

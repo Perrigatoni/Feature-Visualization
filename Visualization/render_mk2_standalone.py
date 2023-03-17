@@ -1,8 +1,8 @@
 from __future__ import absolute_import, print_function
 import os
+import time
 
 import numpy as np
-# import gradio as gr
 import torch
 import torch.nn as nn
 
@@ -28,7 +28,7 @@ def main():
     create elaborate save-files for all layers/channels in given network.
 
     """
-
+    verbose_logs = True
     # Hyper Parameters
     threshold = 512
     parameterization = 'fft'
@@ -36,7 +36,7 @@ def main():
     shape = [1, 3, 224, 224]
     multiple_objectives = False  # in case of Mixing objs
     operator = 'Positive'
-    layer_name = 'fc'
+    layer_name = 'layer2 1 conv2'
     sec_layer_name = 'fc'
     
 
@@ -49,8 +49,8 @@ def main():
     in_features = model.fc.in_features
     model.fc = nn.Linear(in_features, 10)
     model.load_state_dict(torch.load("C://Users//Noel//Documents//THESIS"\
-                                     "//PYTHON-THINGIES//Saved Model Parameters"
-                                     "//resnet18_torchvision//test40_epoch198.pth"))
+                                     "//Feature Visualization//Weights"\
+                                     "//resnet18_torchvision//test43_epoch346.pth"))
     model.to(device).eval()
 
     # Conversion of ReLU activation function to LeakyReLU.
@@ -60,8 +60,8 @@ def main():
     module_dict = module_fill(model)
 
     # Remove loop if you are not interested in creating directories.
-    for channel_n in range(0,10): # module_dict[layer_name].out_channels):
-        
+    for channel_n in range(0, module_dict[layer_name].out_channels):
+        since = time.time()    
         # Create image object ( image to parameterize, starting from noise)
         if parameterization == "pixel":
             image_object = image_classes.Pixel_Image(shape=shape)
@@ -81,8 +81,8 @@ def main():
                                 channel=channel_n)
         secondary_obj = Channel_Obj(layer=module_dict[sec_layer_name],
                                     channel=9)
-        for _ in tqdm(range(0, threshold), total=threshold):
-        # for _ in range(0, threshold):
+        # for step in tqdm(range(0, threshold), total=threshold):
+        for step in range(0, threshold):
             def closure() -> torch.Tensor:
                 optimizer.zero_grad()
                 # Forward pass
@@ -96,15 +96,18 @@ def main():
                     loss = operation(operator,
                                      objective())
                     # print(loss)
+                if verbose_logs: print(f"Loss at step {step}:{loss}")
                 loss.backward()
                 return loss
 
             optimizer.step(closure)
 
+        elapsed_time = time.time() - since
+        if verbose_logs: print(f'Runtime: {elapsed_time}')
         # Display final image after optimization
         # display_out(image_object())
         save_path = r"C:\Users\Noel\Documents\THESIS"\
-            rf"\Outputs_Feature_Visualization\test40\{layer_name.replace(' ', '_')}"
+            rf"\Outputs_Feature_Visualization\test43_rotation_max90_colordeco_fft\{layer_name.replace(' ', '_')}"
         save_image(image_object(),
                    path=save_path,
                    name=f"/{str(channel_n)}_{operator}.jpg")
