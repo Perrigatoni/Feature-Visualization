@@ -32,7 +32,7 @@ def train_model(model,
         and a list of previously achieved accuracies
         that were overshadowed after a better one was hit.
         """
-    if log_path is None:
+    if log_path is None and logging:
         log_path = 'default_logs'
     writer = SummaryWriter(log_path)
     # Specify the confmat
@@ -103,25 +103,29 @@ def train_model(model,
                         loss2 = criterion(aux_outputs, labels)
                         loss = loss1 + 0.4 * loss2
                     else:
-                        if np.random.rand(1) < 0.5:
-                            beta = 1
-                            lam = np.random.beta(beta, beta)
-                            rand_index = torch.randperm(inputs.size()[0]).cuda()
-                            target_a = labels
-                            target_b = labels[rand_index]
-                            bbx1, bby1, bbx2, bby2 = rand_bbox(inputs.size(), lam)
-                            inputs[:, :, bbx1:bbx2, bby1:bby2] = inputs[rand_index, :, bbx1:bbx2, bby1:bby2]
-                            # images = inputs
-                            # display_out(images)
-                            # input()
-                            # adjust lambda to exactly match pixel ratio
-                            lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (inputs.size()[-1] * inputs.size()[-2]))
-                            outputs = model(inputs)
-                            """ DO NOT CALL THE FORWARD METHOD,
-                                IT CAN AFFECT THE HOOKS STORED
-                                DURING THE FORWARD PASS!"""
-                            # loss = criterion(outputs, labels)
-                            loss = criterion(outputs, target_a) * lam + criterion(outputs, target_b) * (1. - lam)
+                        if phase == 'train':
+                            if np.random.rand(1) < 0.5:
+                                beta = 1
+                                lam = np.random.beta(beta, beta)
+                                rand_index = torch.randperm(inputs.size()[0]).cuda()
+                                target_a = labels
+                                target_b = labels[rand_index]
+                                bbx1, bby1, bbx2, bby2 = rand_bbox(inputs.size(), lam)
+                                inputs[:, :, bbx1:bbx2, bby1:bby2] = inputs[rand_index, :, bbx1:bbx2, bby1:bby2]
+                                # images = inputs
+                                # display_out(images)
+                                # input()
+                                # adjust lambda to exactly match pixel ratio
+                                lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (inputs.size()[-1] * inputs.size()[-2]))
+                                outputs = model(inputs)
+                                """ DO NOT CALL THE FORWARD METHOD,
+                                    IT CAN AFFECT THE HOOKS STORED
+                                    DURING THE FORWARD PASS!"""
+                                # loss = criterion(outputs, labels)
+                                loss = criterion(outputs, target_a) * lam + criterion(outputs, target_b) * (1. - lam)
+                            else:
+                                outputs = model(inputs)
+                                loss = criterion(outputs, labels)
                         else:
                             outputs = model(inputs)
                             loss = criterion(outputs, labels)

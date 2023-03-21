@@ -27,16 +27,16 @@ def main():
     print(f"Device used: {device}")
 
     # Hyper Parameters
-    test_num = 58
+    test_num = 59
     log_with_TB = True
     parameters_saved_as = "test"+str(test_num)+"_epoch{}.pth"
-    model_name = "resnet"
+    model_name = "resnet_scratch"
     num_classes = 10
     batch_size = 384
     num_epochs = 400
     feature_extract = False
     pretrained = False
-    change_activ_func = False
+    change_activ_func = True
     starting_lr = 0.004
     weight_decay = 0.01
 
@@ -99,8 +99,8 @@ def main():
                         }
 
     # print(example_inputs[0].shape)
-    log_path = None
-    writer = SummaryWriter(log_path)
+    # log_path = None
+    # writer = SummaryWriter(log_path)
     if log_with_TB:
         log_path = os.path.join('log_artbench', 'test'+str(test_num))
         writer = SummaryWriter(log_path)
@@ -155,15 +155,10 @@ def main():
     # Loss Function
     criterion = nn.CrossEntropyLoss()
     # Training and Evaluation
-
-    # path = r"C:\Users\Noel\Documents\THESIS STUFF"
-    # parameters_saved_as = f"lr{starting_lr}_optimizer{optimizer_ft.__class__.__name__}_scheduler{}_pretrained{}_epoch{}.pth"
     if os.path.exists(param_path) is False:
         os.mkdir(param_path)
     save_path = os.path.join(param_path, parameters_saved_as)
-    # save_path = r"C:\Users\Noel\Documents\THESIS STUFF\PYTHON-THINGIES\
-    #               Saved Model Parameters\
-    #               resnet34_torchvision_stepLR_SGD\testing_unit.pth"
+
     model_ft, hist = train_model(model_ft,
                                  dataloaders_dict,
                                  optimizer_ft,

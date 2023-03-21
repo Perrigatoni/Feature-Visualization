@@ -30,13 +30,13 @@ def main():
     """
     verbose_logs = True
     # Hyper Parameters
-    threshold = 512
+    threshold = 2048
     parameterization = 'fft'
     # Initializing the shape.
     shape = [1, 3, 224, 224]
     multiple_objectives = False  # in case of Mixing objs
     operator = 'Positive'
-    layer_name = 'layer2 1 conv2'
+    layer_name = 'layer1 1 conv1'
     sec_layer_name = 'fc'
     
 

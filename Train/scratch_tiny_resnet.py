@@ -8,7 +8,7 @@
 
 import torch
 import torch.nn as nn
-
+# from torchvision.models import resnet18
 device  = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class block_tiny(nn.Module):
@@ -33,7 +33,7 @@ class block_tiny(nn.Module):
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1)
         # Define the second batch normalization of the block
         self.bn2 = nn.BatchNorm2d(out_channels)
-        self.relu = nn.ReLU()
+        self.relu = nn.ReLU(inplace=True)
         # Identity mapping with this attribute. This will be a convolution
         # aiming to retain the same shape later on when doing layer
         # operations. I would describe it as size-matching.
@@ -89,7 +89,7 @@ class ResNet(nn.Module):
         # to any residual blocks that follow. Does NOT change, do not modify.
         self.conv1 = nn.Conv2d(image_channels, 64, kernel_size=7, stride=2, padding=3)
         self.bn1 = nn.BatchNorm2d(64)
-        self.relu = nn.ReLU()
+        self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)  # maxpool does not do anything for the channels.
 
         """ Here we define the 4 Residual Layers, each
@@ -102,7 +102,7 @@ class ResNet(nn.Module):
 
         # The above structure is followed by an average pooling layer, an adaptive one at that
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(512, num_classes)
+        self.fc = nn.Linear(512, num_classes) 
 
     def forward(self, x):
         x = self.conv1(x)
@@ -116,7 +116,8 @@ class ResNet(nn.Module):
         x = self.layer4(x)
         # finalize with the last two, common for all variants, layers
         x = self.avgpool(x)
-        x = x.reshape(x.shape[0], -1)  # do not forget to reshape the tensor so it can pass throught the linear layer
+        # x = x.reshape(x.shape[0], -1)  # do not forget to reshape the tensor so it can pass throught the linear layer
+        x = torch.flatten(x, 1)
         x = self.fc(x)
         return x
 
@@ -176,8 +177,8 @@ def ResNet10(img_channels=3, num_classes=1000):
 
 
 # def test():
-#     net = ResNet10()
-#     x = torch.randn(2, 3, 224, 224)
+#     net = ResNet18()
+#     x = torch.randn(32, 3, 224, 224)
 #     y = net(x).to(device)
 #     print(y.shape)
 
