@@ -17,7 +17,7 @@ from torch.utils.data import DataLoader
 
 
 def main():
-    data_dir = r"C:\Users\Noel\Documents\THESIS STUFF\Data\artbench-10-imagefolder-split"
+    data_dir = r"C:\Users\Noel\Documents\THESIS\Data\artbench-10-imagefolder-split"
 
     batch_size = 256
     input_size = 224

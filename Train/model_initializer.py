@@ -48,7 +48,7 @@ def initialize_model(model_name,
                      use_pretrained=True,
                      change_AF=False):
     # We need to initialize a few values first
-    model_ft = None
+    model = None
     input_size = 0
 
     if model_name == "resnet":
@@ -59,22 +59,22 @@ def initialize_model(model_name,
             weights = None
         # Pass the actual model from torchvision models to this variable.
         print(f"Selected Weights are: {weights}")
-        model_ft = models.resnet18(weights=weights)
+        model = models.resnet18(weights=weights)
         # Check for Activation Function conversion
         if change_AF:
             convert_modules = Converter()
-            convert_modules.converter(model_ft,
+            convert_modules.converter(model,
                                       nn.ReLU,
                                       nn.LeakyReLU(inplace=True))
             print(f'Conversions made: {convert_modules.conversions_made}')
             # model_ft = convert_modules.model
 
-        set_parameter_requires_grad(model_ft, feature_extract)
+        set_parameter_requires_grad(model, feature_extract)
         # Get the number of input features in
         # the Fully Connected layer of our model.
-        num_ftrs = model_ft.fc.in_features
+        num_ftrs = model.fc.in_features
         # Define and Initialize a new FC layer with the necessary output size.
-        model_ft.fc = nn.Linear(num_ftrs, num_classes)
+        model.fc = nn.Linear(num_ftrs, num_classes)
         # Image input size for the model.
         input_size = 224
     # Add more conditions in the future...
@@ -87,22 +87,22 @@ def initialize_model(model_name,
             weights = None
         # Pass the actual model from torchvision models to this variable.
         print(f"Selected Weights are: {weights}")
-        model_ft = ResNet18()
+        model = ResNet18()
         # Check for Activation Function conversion
         if change_AF:
             convert_modules = Converter()
-            convert_modules.converter(model_ft,
+            convert_modules.converter(model,
                                       nn.ReLU,
                                       nn.LeakyReLU(inplace=True))
             print(f'Conversions made: {convert_modules.conversions_made}')
             # model_ft = convert_modules.model
 
-        set_parameter_requires_grad(model_ft, feature_extract)
+        set_parameter_requires_grad(model, feature_extract)
         # Get the number of input features in
         # the Fully Connected layer of our model.
-        num_ftrs = model_ft.fc.in_features
+        num_ftrs = model.fc.in_features
         # Define and Initialize a new FC layer with the necessary output size.
-        model_ft.fc = nn.Linear(num_ftrs, num_classes)
+        model.fc = nn.Linear(num_ftrs, num_classes)
         # Image input size for the model.
         input_size = 224
     # Add more conditions in the future...
@@ -110,4 +110,4 @@ def initialize_model(model_name,
         print('Invalid Model name, exiting...')
         exit()
 
-    return model_ft, input_size
+    return model, input_size

@@ -15,7 +15,7 @@ from tqdm import tqdm
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def train_model(model,
+def train_cutmix(model,
                 dataloaders,
                 optimizer,
                 scheduler,
@@ -32,6 +32,7 @@ def train_model(model,
         and a list of previously achieved accuracies
         that were overshadowed after a better one was hit.
         """
+    
     if log_path is None and logging:
         log_path = 'default_logs'
     writer = SummaryWriter(log_path)
@@ -42,7 +43,7 @@ def train_model(model,
     since = time.time()
     # Create an empty list where the validation accuracy
     # of each epoch is to be stored for future reference.
-    test_acc_history = []
+    # test_acc_history = []
     # Deepcopy the model's state dictionary as best model weights.
     # ---------> state_dict is a python dictionary object
     #  mapping each layer to its parameter tensor.
@@ -55,6 +56,7 @@ def train_model(model,
     best_acc = 0.0
 
     for epoch in range(num_epochs):
+        print('Note: This training function implements cutmix.')
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
         print('-' * 10)
         tracemalloc.start()  # !
@@ -140,7 +142,7 @@ def train_model(model,
                                                         5, 6, 7, 8, 9])
                         # print(batch_confmat)
                         confusion_accumulator = np.add(confusion_accumulator,
-                                                       b_cm).astype(np.int64)  # !
+                                                       b_cm).astype(np.int16)  # ! DO I NEED IT TO BE LARGER?
 
                     # Calculate the Backward pass, only when in training phase
                     if phase == 'train':
@@ -174,14 +176,12 @@ def train_model(model,
                                                                  'ukiyo.'])
                 confmat.plot(xticks_rotation='vertical',
                              colorbar=False)
-                plt.show()
+                # plt.show()
             
             # Calculate total epoch loss
-            epoch_loss = running_loss / \
-                len(dataloaders[phase].dataset)
+            epoch_loss = running_loss / len(dataloaders[phase].dataset)
             # Calculate epoch accuracy
-            epoch_acc = running_corrects.double() / \
-                len(dataloaders[phase].dataset)
+            epoch_acc = running_corrects.double() / len(dataloaders[phase].dataset)
 
             if logging:
                 writer.add_scalar('{} Loss:'.format(phase), epoch_loss, epoch)
@@ -210,7 +210,7 @@ def train_model(model,
                 best_acc = epoch_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
                 # Save the confmat as figure too.
-                confmat.figure_.savefig('bestconfmat.png')   # SAVE CONFUSION MATRIX TO ROOT DIRECTORY
+                # confmat.figure_.savefig('bestconfmat.png')   # SAVE CONFUSION MATRIX TO ROOT DIRECTORY
                 plt.close()
                 # Check if save_path is defined to save state dictionary
                 # after each advancing epoch.
@@ -218,12 +218,12 @@ def train_model(model,
                     torch.save(model.state_dict(), save_path.format(epoch))
             # Append to history list.
             if phase == 'test':
-                test_acc_history.append(epoch_acc)
+                # test_acc_history.append(epoch_acc)
                 # Scheduler
                 last_lr = optimizer.param_groups[0]['lr']
-                if scheduler.__class__.__name__ == 'ReduceLROnPlateau':
-                    scheduler.step(epoch_loss)
-                    last_lr = scheduler._last_lr[0]
+                # if scheduler.__class__.__name__ == 'ReduceLROnPlateau':
+                #     scheduler.step(epoch_loss)
+                #     last_lr = scheduler._last_lr[0]
                 if scheduler.__class__.__name__ == 'CosineAnnealingWarmRestarts':
                     scheduler.step()
                     last_lr = scheduler.get_last_lr()[0]
@@ -243,7 +243,7 @@ def train_model(model,
 
     # Load best model weights.
     model.load_state_dict(best_model_wts)
-    return model, test_acc_history
+    return model  #, test_acc_history
 
 
 def rand_bbox(size, lam):

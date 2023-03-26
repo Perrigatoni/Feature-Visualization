@@ -14,7 +14,7 @@ from tqdm import tqdm
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def train_model(model,
+def train_plain(model,
                 dataloaders,
                 optimizer,
                 scheduler,
@@ -41,7 +41,7 @@ def train_model(model,
     since = time.time()
     # Create an empty list where the validation accuracy
     # of each epoch is to be stored for future reference.
-    test_acc_history = []
+    # test_acc_history = []
     # Deepcopy the model's state dictionary as best model weights.
     # ---------> state_dict is a python dictionary object
     #  mapping each layer to its parameter tensor.
@@ -68,7 +68,9 @@ def train_model(model,
             running_loss = 0.0
             # Amount of corrects.
             running_corrects = 0
+
             confusion_accumulator = np.zeros((num_classes, num_classes))
+            
             # Iterate over the data.
             # The dataloaders dictionary has two entries, one for the
             # phase of training and one for validation
@@ -117,7 +119,7 @@ def train_model(model,
                                                         5, 6, 7, 8, 9])
                         # print(batch_confmat)
                         confusion_accumulator = np.add(confusion_accumulator,
-                                                       b_cm).astype(np.int64)  # !
+                                                       b_cm).astype(np.int32)  # !
 
                     # Calculate the Backward pass, only when in training phase
                     if phase == 'train':
@@ -180,26 +182,30 @@ def train_model(model,
             # Deep copy the model
             if phase == 'test' and epoch_acc > best_acc:
                 # Display confusion matrix in Tensorboard/figures tab.
+
                 if logging:
                     writer.add_figure("Best Confusion Matrix",
                                       figure=confmat.figure_, global_step=epoch)
                 print(confusion_accumulator)
                 best_acc = epoch_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
-                # Save the confmat as figure too.
-                confmat.figure_.savefig('bestconfmat.png')   # SAVE CONFUSION MATRIX TO ROOT DIRECTORY
-                # Check if save_path is defined to save state dictionary
+                # # Save the confmat as figure too.
+                # confmat.figure_.savefig('bestconfmat.png')   # SAVE CONFUSION MATRIX TO ROOT DIRECTORY
+
+                # # Check if save_path is defined to save state dictionary
                 # after each advancing epoch.
                 if save_path is not None:
                     torch.save(model.state_dict(), save_path.format(epoch))
             # Append to history list.
             if phase == 'test':
-                test_acc_history.append(epoch_acc)
+                # test_acc_history.append(epoch_acc)
                 # Scheduler
                 last_lr = optimizer.param_groups[0]['lr']
-                if scheduler.__class__.__name__ == 'ReduceLROnPlateau':
-                    scheduler.step(epoch_loss)
-                    last_lr = scheduler._last_lr[0]
+
+                # if scheduler.__class__.__name__ == 'ReduceLROnPlateau':
+                #     scheduler.step(epoch_loss)
+                #     last_lr = scheduler._last_lr[0]
+                
                 if scheduler.__class__.__name__ == 'CosineAnnealingWarmRestarts':
                     scheduler.step()
                     last_lr = scheduler.get_last_lr()[0]
@@ -216,4 +222,4 @@ def train_model(model,
 
     # Load best model weights.
     model.load_state_dict(best_model_wts)
-    return model, test_acc_history
+    return model   #, test_acc_history
