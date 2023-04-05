@@ -56,7 +56,7 @@ class DeepDream_Obj(Common):
     def __call__(self):
         if self.output[self.layer] is None:
             exit("Object callable only after forward pass!")
-        dream = self.output[self.layer]**2  # like mseloss, check it out later
+        dream = self.output[self.layer]**2  # like mse loss
         loss_local = -dream.mean()
         return self.scaler * loss_local
 

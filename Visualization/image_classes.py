@@ -12,6 +12,7 @@ class RGB_decorrelation():
         self.color_correlation_svd_sqrt = torch.tensor([[-0.2051,  0.0626,  0.0137],
                                                         [-0.2001, -0.0070, -0.0286],
                                                         [-0.1776, -0.0644,  0.0164]])
+        # IMAGENET VALUES
         # self.color_correlation_svd_sqrt = torch.tensor([[0.26, 0.09, 0.02],
         #                                                [0.27, 0.00, -0.05],
         #                                                [0.27, -0.09, 0.03]])
@@ -102,9 +103,13 @@ class FFT_Image(RGB_decorrelation):
         # Hermitian property -- "The input has complex conjugate
         # with same value but different sign in order to cancel out,
         # returning a scalar value."
-        tensor_image = torch.fft.irfftn(regularized_coefficient_array, s=(self.h, self.w), norm='ortho') # Need to define orthonormal basis!
+        tensor_image = torch.fft.irfftn(regularized_coefficient_array,
+                                        s=(self.h, self.w),
+                                        norm='ortho') # Need to define orthonormal basis!
+
         tensor_image = tensor_image[:self.batch, :self.channels, :self.h, :self.w]
-        # Indeed this seems to saturate colors... dunno why...
+        # Indeed this seems to saturate colors... don't know why, inadequate 
+        # documentation on Lucid's implementation
         magic_const = 4.0
         tensor_image = tensor_image / magic_const
         tensor_image = self.linearly_decorrelated_color_space(tensor_image)

@@ -27,11 +27,11 @@ def main():
     print(f"Device used: {device}")
 
     # Hyper Parameters
-    test_num = 61
+    test_num = 68
     log_with_TB = True
-    model_name = "resnet"
+    model_name = "resnet_scratch"
     num_classes = 10
-    num_epochs = 400
+    num_epochs = 600
     feature_extract = False
     pretrained = False
     change_activ_func = True
@@ -64,12 +64,12 @@ def main():
 
     # Data augmentation and normalization for training/validation/testing
     data_transforms = {
-        'train': T.Compose([T.RandomResizedCrop(input_size, scale=(0.5, 1)),
+        'train': T.Compose([T.RandomResizedCrop(input_size, scale=(0.2, 1)),
                             T.RandomHorizontalFlip(),
                             T.RandomVerticalFlip(),
                             T.RandomAffine(degrees=0,
-                                           translate=(0.05, 0.05),
-                                           scale=(0.8, 1.2),
+                                           translate=(0.1, 0.1),
+                                           scale=(0.7, 1.3),
                                            interpolation=InterpolationMode.BILINEAR),
                             T.ToTensor(),
                             T.RandomErasing(),
@@ -83,23 +83,6 @@ def main():
                            ])
                         }
 
-    # class ImageFolderMemControlled(datasets.ImageFolder):
-    #     def __getitem__(self, index: int):
-    #         """
-    #         Args:
-    #             index (int): Index
-
-    #         Returns:
-    #             tuple: (sample, target) where target is class_index of the target class.
-    #         """
-    #         path, target = self.samples[index]
-    #         sample = self.loader(path)
-    #         if self.transform is not None:
-    #             sample = self.transform(sample)
-    #         if self.target_transform is not None:
-    #             target = self.target_transform(target)
-
-    #         return sample, target
 
     # Create training and validation datasets.
     print('Initializing Datasets and Dataloaders for both phases...')
@@ -161,7 +144,7 @@ def main():
     scheduler_ft = CosineAnnealingWarmRestarts(optimizer,
                                                T_0=50,
                                                T_mult=1,
-                                               eta_min=0,
+                                               eta_min=1e-6,
                                                verbose=True)
 
     if log_with_TB:

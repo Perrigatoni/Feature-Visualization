@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torchvision
 from torchvision import models
-from scratch_tiny_resnet import ResNet18
+from scratch_tiny_resnet import ResNetX
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
@@ -87,7 +87,7 @@ def initialize_model(model_name,
             weights = None
         # Pass the actual model from torchvision models to this variable.
         print(f"Selected Weights are: {weights}")
-        model = ResNet18()
+        model = ResNetX()
         # Check for Activation Function conversion
         if change_AF:
             convert_modules = Converter()

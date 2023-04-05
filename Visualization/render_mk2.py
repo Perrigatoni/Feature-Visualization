@@ -75,8 +75,8 @@ class Render_Class():
         in_features = model.fc.in_features
         model.fc = nn.Linear(in_features, 10)
         model.load_state_dict(torch.load("C://Users//Noel//Documents//THESIS"\
-                                        "//PYTHON-THINGIES//Saved Model Parameters"
-                                        "//resnet18_torchvision//test40_epoch198.pth"))
+                                        "//Feature Visualization//Weights"
+                                        "//resnet18_torchvision//test43_epoch346.pth"))
         model.to(device).eval()
 
         # Conversion of ReLU activation function to LeakyReLU.
