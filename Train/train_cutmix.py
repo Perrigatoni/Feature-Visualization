@@ -107,8 +107,8 @@ def train_cutmix(model,
                     else:
                         if phase == 'train':
                             if np.random.rand(1) < 0.5:
-                                beta = 1
-                                lam = np.random.beta(beta, beta)
+                                beta_coef = 1
+                                lam = np.random.beta(beta_coef, beta_coef)
                                 rand_index = torch.randperm(inputs.size()[0]).cuda()
                                 target_a = labels
                                 target_b = labels[rand_index]
@@ -120,10 +120,6 @@ def train_cutmix(model,
                                 # adjust lambda to exactly match pixel ratio
                                 lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (inputs.size()[-1] * inputs.size()[-2]))
                                 outputs = model(inputs)
-                                """ DO NOT CALL THE FORWARD METHOD,
-                                    IT CAN AFFECT THE HOOKS STORED
-                                    DURING THE FORWARD PASS!"""
-                                # loss = criterion(outputs, labels)
                                 loss = criterion(outputs, target_a) * lam + criterion(outputs, target_b) * (1. - lam)
                             else:
                                 outputs = model(inputs)

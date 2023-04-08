@@ -68,9 +68,6 @@ class Channel_Obj(Common):
     def __call__(self) -> torch.Tensor:
         if self.output[self.layer] is None:
             exit("Object callable only after forward pass!")
-        # if isinstance(self.layer, nn.Linear):
-        #     loss_local =  torch.nn.functional.softmax(self.output[self.layer], dim=1)[:, self.channel]
-        # else:
         channel_tensor = self.output[self.layer][:, self.channel]
         loss_local = -channel_tensor.mean()
         return self.scaler * loss_local
@@ -181,7 +178,7 @@ class WRT_Classes(Common):
         added to the first image of the batch (the value of which has already
         been reduced to a scalar).
 
-        1e-3 seems to yield the most legible results, since the logits need
+        1.5e-3 seems to yield the most legible results, since the logits need
         to be scaled, otherwise they overrule the visualization, obfuscating
         any other objective. 
         """

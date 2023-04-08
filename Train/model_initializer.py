@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torchvision
 from torchvision import models
-from scratch_tiny_resnet import ResNetX
+from scratch_tiny_resnet import ResNetX, ResNet10
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
@@ -20,7 +20,7 @@ def set_parameter_requires_grad(model, feature_extracting):
 # I need it to have a conversion made attribute
 # so the recurrence does not actually reset the counter.
 # The fact that I use no main function means I cannot just
-# drop a damn global variable and call it a day.
+# drop a global variable and call it a day.
 class Converter():
     def __init__(self):
         self.conversions_made = 0
@@ -67,7 +67,6 @@ def initialize_model(model_name,
                                       nn.ReLU,
                                       nn.LeakyReLU(inplace=True))
             print(f'Conversions made: {convert_modules.conversions_made}')
-            # model_ft = convert_modules.model
 
         set_parameter_requires_grad(model, feature_extract)
         # Get the number of input features in
@@ -87,7 +86,7 @@ def initialize_model(model_name,
             weights = None
         # Pass the actual model from torchvision models to this variable.
         print(f"Selected Weights are: {weights}")
-        model = ResNetX()
+        model = ResNet10()
         # Check for Activation Function conversion
         if change_AF:
             convert_modules = Converter()

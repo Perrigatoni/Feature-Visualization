@@ -16,7 +16,6 @@ from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 from model_initializer import initialize_model
 from train import train_plain
 from train_cutmix import train_cutmix
-# from scratch_tiny_resnet import ResNet10, ResNet18
 
 
 def main():
@@ -27,9 +26,9 @@ def main():
     print(f"Device used: {device}")
 
     # Hyper Parameters
-    test_num = 68
+    test_num = 70
     log_with_TB = True
-    model_name = "resnet_scratch"
+    model_name = "resnet"
     num_classes = 10
     num_epochs = 600
     feature_extract = False
@@ -64,13 +63,16 @@ def main():
 
     # Data augmentation and normalization for training/validation/testing
     data_transforms = {
-        'train': T.Compose([T.RandomResizedCrop(input_size, scale=(0.2, 1)),
-                            T.RandomHorizontalFlip(),
-                            T.RandomVerticalFlip(),
-                            T.RandomAffine(degrees=0,
+        'train': T.Compose([T.Pad(padding=24,
+                                  fill=0,
+                                  padding_mode='constant'),
+                            T.RandomAffine(degrees=5,
                                            translate=(0.1, 0.1),
                                            scale=(0.7, 1.3),
                                            interpolation=InterpolationMode.BILINEAR),
+                            T.RandomResizedCrop(input_size, scale=(0.5, 1)),
+                            T.RandomHorizontalFlip(),
+                            T.RandomVerticalFlip(),
                             T.ToTensor(),
                             T.RandomErasing(),
                             T.Normalize([0.5162, 0.4644, 0.3975],
@@ -118,6 +120,7 @@ def main():
         # writer.add_image('First batch of train dataloader.', img_grid)
         writer.add_graph(model, example_inputs.to(device))
 
+
     # Gather parameters to update. reminder that feature extraction and
     # finetuning have different requirements for parameter updates.
     # Pass the execution of model's parameters method to a variable
@@ -144,7 +147,7 @@ def main():
     scheduler_ft = CosineAnnealingWarmRestarts(optimizer,
                                                T_0=50,
                                                T_mult=1,
-                                               eta_min=1e-6,
+                                               eta_min=1e-5,
                                                verbose=True)
 
     if log_with_TB:

@@ -14,7 +14,7 @@ import image_classes
 import transformations
 
 from objective_classes_mk2 import *
-from scratch_tiny_resnet import ResNetX
+from scratch_tiny_resnet import ResNetX, ResNet10
 
 
 
@@ -49,7 +49,7 @@ def main():
 
     # Load model with no weights.
     # model = models.resnet18(weights=None)
-    model = ResNetX()
+    model = ResNet10()
     # model = models.resnet18(weights=models.ResNet18_Weights)
     # Reshape last layer.
     in_features = model.fc.in_features
@@ -60,7 +60,7 @@ def main():
                                         "//Feature Visualization//Weights"\
                                         "//resnet18_torchvision//test43_epoch346.pth"))
     else:
-        model.load_state_dict(torch.load("/home/periclesstamatis/saved_model_parameters/test68/test68_epoch598.pth"))
+        model.load_state_dict(torch.load("/home/periclesstamatis/saved_model_parameters/test69/test69_epoch549.pth"))
     
     model.to(device).eval()
 
@@ -97,7 +97,7 @@ def main():
             #                             channel=9)
             for step in tqdm(range(0, threshold), total=threshold):
 
-                def closure() -> torch.Tensor:
+                def closure() -> float:
                     optimizer.zero_grad()
                     # Forward pass
                     model(transformations.standard_transforms(image_object()))
@@ -112,7 +112,7 @@ def main():
                         # print(loss)
                     if verbose_logs and step == threshold - 1: print(f"Loss at step {step}:{loss}")
                     loss.backward()
-                    return loss
+                    return loss.item()
 
                 optimizer.step(closure)
 
@@ -122,7 +122,7 @@ def main():
                 save_path = r"C:\Users\Noel\Documents\THESIS"\
                     rf"\Outputs_Feature_Visualization\test43_experiments_colordeco_fft\{layer_name.replace(' ', '_')}"
             else:
-                save_path = rf"/home/periclesstamatis/outputs/test68/{layer_name.replace(' ', '_')}"
+                save_path = rf"/home/periclesstamatis/outputs/test69/{layer_name.replace(' ', '_')}"
 
             check_path(save_path)
 
