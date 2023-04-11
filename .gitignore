@@ -4,3 +4,4 @@ Weights/resnet18_torchvision/test43_epoch346.pth
 Visualization/test43_activations.parquet
 Weights/resnet18_torchvision/test64_epoch347.pth
 Visualization/collate_images.py
+Visualization/test65_activations.parquet
