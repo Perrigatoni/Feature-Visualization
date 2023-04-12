@@ -213,9 +213,9 @@ class Diversity_Obj(Common):
         channel_tensor = self.output[self.layer][:, self.channel]
         flattened = self.output[self.layer].view(batch, channels, -1)
         grams = torch.matmul(flattened, torch.transpose(flattened, 1, 2))
-        grams = F.normalize(grams, p=2, dim=(1, 2))
-        loss_local = -channel_tensor.mean()
-        return loss_local - self.scaler * (-sum([ sum([ (grams[i]*grams[j]).sum()
+        grams = F.normalize(grams, p=2, dim=(1, 2), eps=1e-10)
+        loss_local = - channel_tensor.mean()
+        return loss_local - self.scaler * (-sum([sum([torch.sum(grams[i]*grams[j])
                for j in range(batch) if j != i])
                for i in range(batch)]) / batch)
 
@@ -229,7 +229,7 @@ class Diversity_Obj_2(Common):
         batch, channels, _, _ = self.output[self.layer].shape
         flattened = self.output[self.layer].view(batch, channels, -1)
         grams = torch.matmul(flattened, torch.transpose(flattened, 1, 2))
-        grams = F.normalize(grams, p=2, dim=(1, 2))
-        return - self.scaler * (-sum([ sum([ (grams[i]*grams[j]).sum()
+        grams = F.normalize(grams, p=2, dim=(1, 2), eps=1e-10)
+        return - self.scaler * (-sum([ sum([ torch.sum(grams[i]*grams[j])
                for j in range(batch) if j != i])
                for i in range(batch)]) / batch)
