@@ -15,6 +15,7 @@ import transformations
 
 from objective_classes_mk2 import *
 
+
 class Render_Class():
     def __init__(self) -> None:
         self.flag = False
@@ -24,21 +25,21 @@ class Render_Class():
         self.flag = True
 
     def render(self,
-            type,
-            operator,
-            layer,
-            channel,
-            param,
-            threshold,
-            image_shape,
-            layer2=None,
-            channel2=None,
-            progress=gr.Progress()
-            ):
-        """Customizable method creating visualizations based on 
+               type,
+               operator,
+               layer,
+               channel,
+               param,
+               threshold,
+               image_shape,
+               layer2=None,
+               channel2=None,
+               progress=gr.Progress()
+               ):
+        """Customizable method creating visualizations based on
             specified objectives and parameters.
-            
-            Utilizes case matching for each type of objective in 
+
+            Utilizes case matching for each type of objective in
             'objective_classes' and performs gradient ascend based
             on input parameters.
 
@@ -63,7 +64,10 @@ class Render_Class():
         threshold = threshold or 256
         parameterization = param or 'fft'
         # Initializing the shape.
-        shape = [image_shape, 3, 224, 224]
+        if type.strip('<p>\n/') == 'Diversity':
+            shape = [image_shape, 3, 128, 128]
+        else:
+            shape = [image_shape, 3, 224, 224]
         multiple_objectives = False
 
         # Execute utilizing GPU if available
@@ -74,9 +78,10 @@ class Render_Class():
         # Reshape last layer.
         in_features = model.fc.in_features
         model.fc = nn.Linear(in_features, 10)
-        model.load_state_dict(torch.load("C://Users//Noel//Documents//THESIS"\
-                                        "//Feature Visualization//Weights"
-                                        "//resnet18_torchvision//test43_epoch346.pth"))
+        model.load_state_dict(torch.load("C://Users//Noel//Documents//THESIS"
+                                         "//Feature Visualization//Weights"
+                                         "//resnet18_torchvision"
+                                         "//test65_epoch598.pth"))
         model.to(device).eval()
 
         # Conversion of ReLU activation function to LeakyReLU.
@@ -105,7 +110,10 @@ class Render_Class():
             case 'Neuron':
                 objective = Neuron_Obj(module_dict[layer], channel)
             case 'Interpolation':
-                objective = Channel_Interpolate(module_dict[layer], channel, module_dict[layer2], channel2)
+                objective = Channel_Interpolate(module_dict[layer],
+                                                channel,
+                                                module_dict[layer2],
+                                                channel2)
             case 'Joint':
                 objective = Channel_Obj(module_dict[layer], channel)
                 secondary_obj = Channel_Obj(module_dict[layer2], channel2)
@@ -128,7 +136,7 @@ class Render_Class():
                 exit('No valid objective was selected from objective list.')
 
         for _ in progress.tqdm(range(0, threshold), total=threshold):
-        # for _ in range(0, threshold):
+
             def closure() -> torch.Tensor:
                 optimizer.zero_grad()
                 # Forward pass
@@ -140,13 +148,13 @@ class Render_Class():
                 else:
                     loss = operation(operator, objective())
                     # print(loss)
-                
+
                 loss.backward()
                 return loss
 
             optimizer.step(closure)
             if self.flag:
-                return None # display_out(image_object())
+                return None  # display_out(image_object())
 
         # Display final image after optimization
         return display_out(image_object())
@@ -167,7 +175,7 @@ def display_out(tensor: torch.Tensor):
     image = (image * 255).astype(np.uint8)
     if len(image.shape) == 4:
         image = np.concatenate(image, axis=1)
-    return Image.fromarray(image)# .show()
+    return Image.fromarray(image)
 
 
 # Saving function
@@ -188,7 +196,9 @@ def module_convertor(model, module_type_pre, module_type_post):
     conversions_made = 0
     for name, module in model._modules.items():
         if len(list(model.children())) > 0:
-            model._modules[name] = module_convertor(module, module_type_pre, module_type_post)
+            model._modules[name] = module_convertor(module,
+                                                    module_type_pre,
+                                                    module_type_post)
 
         if type(module) == module_type_pre:
             conversions_made += 1
@@ -207,4 +217,3 @@ def module_fill(model):
                 underscored_name = name.replace('.', ' ')
                 module_dict[underscored_name] = mod
     return module_dict
-

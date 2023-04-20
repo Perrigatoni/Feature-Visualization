@@ -16,7 +16,7 @@ def operation(operator, loss1, loss2=torch.zeros(1,).to(device)):
         case '-':
             loss = loss1 - loss2
         case 'Negative':
-            loss =  - loss1
+            loss = - loss1
         case 'Positive':
             loss = loss1
         case _:
@@ -24,10 +24,10 @@ def operation(operator, loss1, loss2=torch.zeros(1,).to(device)):
     return loss
 
 
-
 # =================================================================
 # Parent class used for hooking functionality on all objectives
 class Common:
+    """Parent class to handle Inheritance from."""
     def __init__(self, layer) -> None:
         self.hook = layer.register_forward_hook(self.hook_function)
         self.layer = layer
@@ -60,6 +60,7 @@ class DeepDream_Obj(Common):
         loss_local = -dream.mean()
         return self.scaler * loss_local
 
+
 class Channel_Obj(Common):
     def __init__(self, layer, channel) -> None:
         super().__init__(layer)
@@ -71,6 +72,7 @@ class Channel_Obj(Common):
         channel_tensor = self.output[self.layer][:, self.channel]
         loss_local = -channel_tensor.mean()
         return self.scaler * loss_local
+
 
 class Neuron_Obj(Common):
     def __init__(self, layer, channel,
@@ -160,6 +162,7 @@ class Channel_Interpolate(Common):
             sum_loss -= weights[n] * channel_tensor_2[n].mean()
         return self.scaler * sum_loss
 
+
 class WRT_Classes(Common):
     """This class displays 10 images (thus needs a batched input
         with a shape of [num_classes, 3, H, W]) adding the logits of the
@@ -169,7 +172,7 @@ class WRT_Classes(Common):
         Output is 10 images, each maximizing the specified channel and
         one of the available output classes, since the logits of that class
         are to be maximized to induce a greater loss.
-        
+
         The loop advances sum_loss accessing the channel tensor for batch
         number n (the first image is indexed as batch_num=0)
         and adding the diagonal element corresponding to each class.
@@ -180,7 +183,7 @@ class WRT_Classes(Common):
 
         1.5e-3 seems to yield the most legible results, since the logits need
         to be scaled, otherwise they overrule the visualization, obfuscating
-        any other objective. 
+        any other objective.
         """
     def __init__(self, layer, channel, model):
         super().__init__(layer)
@@ -200,7 +203,6 @@ class WRT_Classes(Common):
         return self.scaler * sum_loss
 
 
-
 class Diversity_Obj(Common):
     def __init__(self, layer, channel) -> None:
         super().__init__(layer)
@@ -216,8 +218,9 @@ class Diversity_Obj(Common):
         grams = F.normalize(grams, p=2, dim=(1, 2), eps=1e-10)
         loss_local = - channel_tensor.mean()
         return loss_local - self.scaler * (-sum([sum([torch.sum(grams[i]*grams[j])
-               for j in range(batch) if j != i])
-               for i in range(batch)]) / batch)
+                                                     for j in range(batch) if j != i])
+                                                for i in range(batch)]) / batch)
+
 
 class Diversity_Obj_2(Common):
     def __init__(self, layer) -> None:
@@ -230,6 +233,6 @@ class Diversity_Obj_2(Common):
         flattened = self.output[self.layer].view(batch, channels, -1)
         grams = torch.matmul(flattened, torch.transpose(flattened, 1, 2))
         grams = F.normalize(grams, p=2, dim=(1, 2), eps=1e-10)
-        return - self.scaler * (-sum([ sum([ torch.sum(grams[i]*grams[j])
-               for j in range(batch) if j != i])
-               for i in range(batch)]) / batch)
+        return - self.scaler * (-sum([sum([torch.sum(grams[i]*grams[j])
+                                           for j in range(batch) if j != i])
+                                      for i in range(batch)]) / batch)

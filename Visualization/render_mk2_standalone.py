@@ -57,7 +57,7 @@ def save_image(tensor: torch.Tensor,
 # Path checking and creation
 def check_path(path: str):
     """Checks if path exists.
-        Will create the specified directories if 
+        Will create the specified directories if
         they don't already exist."""
     if os.path.exists(path) is False:
         os.makedirs(path)
@@ -98,13 +98,16 @@ def module_fill(model):
 
 def main():
     """
-    Standalone render function able to reproduce results achieved with the Interaction
-    handling, without the need for gradio library, allowing more flexibility to
-    the end user.
+    Standalone render function able to reproduce results
+    achieved with the Interaction handling,
+    without the need for gradio library,
+    allowing more flexibility to the end user.
 
-    Adapt parameters to save images in custom directories, mix different objectives,
-    view customized results, import own weights and visualize personalized images,
-    create elaborate save-files for all layers/channels in given network.
+    Adapt parameters to save images in custom directories,
+    mix different objectives, view customized results,
+    import own weights and visualize personalized images,
+    create elaborate save-files for all layers/channels
+    in given network.
 
     """
     local_machine_results = False
@@ -131,9 +134,12 @@ def main():
     if local_machine_results:
         model.load_state_dict(torch.load("C://Users//Noel//Documents//THESIS"
                                          "//Feature Visualization//Weights"
-                                         "//resnet18_torchvision//test65_epoch598.pth"))
+                                         "//resnet18_torchvision"
+                                         "//test65_epoch598.pth"))
     else:
-        model.load_state_dict(torch.load("/home/periclesstamatis/saved_model_parameters/test65/test65_epoch598.pth"))
+        model.load_state_dict(torch.load("/home/periclesstamatis/"
+                                         "saved_model_parameters/test65"
+                                         "/test65_epoch598.pth"))
 
     model.to(device).eval()
 
@@ -176,12 +182,12 @@ def main():
                     model(transformations.standard_transforms(image_object()))
                     if multiple_objectives:
                         loss = operation(operator,
-                                            objective(),
-                                            secondary_obj())
+                                         objective(),
+                                         secondary_obj())
                         # print(loss)
                     else:
                         loss = operation(operator,
-                                            objective())
+                                         objective())
                         # print(loss)
                     if verbose_logs and step == threshold - 1:
                         print(f"Loss at step {step}:{loss}")
@@ -194,9 +200,11 @@ def main():
             # display_out(image_object())
             if local_machine_results:
                 save_path = r"C:\Users\Noel\Documents\THESIS"\
-                    rf"\Outputs_Feature_Visualization\test65_temps\{layer_name.replace(' ', '_')}"
+                    r"\Outputs_Feature_Visualization"\
+                    rf"\test65_temps\{layer_name.replace(' ', '_')}"
             else:
-                save_path = rf"/home/periclesstamatis/outputs/test65/{layer_name.replace(' ', '_')}"
+                save_path = r"/home/periclesstamatis"\
+                    rf"/outputs/test65/{layer_name.replace(' ', '_')}"
 
             check_path(save_path)
 
