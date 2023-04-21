@@ -55,10 +55,6 @@ def main():
         and a list of previously achieved accuracies
         that were overshadowed after a better one was hit.
         """
-
-    best_model_wts = copy.deepcopy(model.state_dict())
-    # Initialize best accuracy at zero.
-    best_acc = 0.0
     # Evaluation mode.
     model.eval()
     # Amount of corrects.
@@ -77,12 +73,12 @@ def main():
         _, preds = torch.max(outputs, dim=1)
         """ Confusion Matrix """
         batch_confmat = confusion_matrix(labels.detach().cpu().numpy(),
-                                        preds.detach().cpu().numpy(),
-                                        labels=[0, 1, 2, 3, 4,
-                                                5, 6, 7, 8, 9])
+                                         preds.detach().cpu().numpy(),
+                                         labels=[0, 1, 2, 3, 4,
+                                                 5, 6, 7, 8, 9])
         # print(batch_confmat)
         confusion_accumulator = np.add(confusion_accumulator,
-                                    batch_confmat).astype(np.int32)  # !
+                                       batch_confmat).astype(np.int32)  # !
 
         """PERFORMANCE METRICS"""
         running_corrects += torch.sum(preds == labels.data)
@@ -109,8 +105,7 @@ def main():
     print(confusion_accumulator)
     # Save the confmat as figure too.
     # SAVE CONFUSION MATRIX TO ROOT DIR
-    confmat.figure_.savefig('bestconfmat_test65.png', bbox_inches='tight')   
-
+    confmat.figure_.savefig('bestconfmat_test65.png', bbox_inches='tight')
 
 if __name__ == "__main__":
     main()
