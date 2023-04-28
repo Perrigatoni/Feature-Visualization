@@ -5,3 +5,9 @@ df = pd.read_parquet(path=r'C:\Users\Noel\Documents\THESIS\Feature Visualization
 
 confusion_accumulator = df.to_numpy()
 print(confusion_accumulator)
+
+for i in range(len(confusion_accumulator)):
+TP = 
+TN = 
+FP = 
+FN = 

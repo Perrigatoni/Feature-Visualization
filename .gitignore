@@ -5,3 +5,8 @@ Visualization/test43_activations.parquet
 Weights/resnet18_torchvision/test64_epoch347.pth
 Visualization/collate_images.py
 Visualization/test65_activations.parquet
+Visualization/Leaky ReLU.png
+Visualization/sigmoid.png
+Visualization/Step Func.png
+bestconfmat_test65.png
+dataframe_test65

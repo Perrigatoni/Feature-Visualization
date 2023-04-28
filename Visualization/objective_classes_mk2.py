@@ -207,8 +207,9 @@ class Diversity_Obj(Common):
     def __init__(self, layer, channel) -> None:
         super().__init__(layer)
         self.channel = channel
+        self.scaler = 1e-2
 
-    def __call__(self)-> torch.Tensor:
+    def __call__(self) -> torch.Tensor:
         if self.output[self.layer] is None:
             exit("Object callable only after forward pass!")
         batch, channels, _, _ = self.output[self.layer].shape

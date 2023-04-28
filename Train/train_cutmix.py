@@ -76,7 +76,7 @@ def train_cutmix(model,
             # The dataloaders dictionary has two entries, one for the
             # phase of training and one for validation
             for inputs, labels in tqdm(dataloaders[phase]):
-                
+
                 inputs = inputs.to(device)
                 labels = labels.to(device)
 

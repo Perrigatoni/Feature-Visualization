@@ -26,13 +26,13 @@ def main():
     print(f"Device used: {device}")
 
     # Hyper Parameters
-    test_num = 70
+    test_num = 71
     log_with_TB = True
     model_name = "resnet"
     num_classes = 10
     num_epochs = 600
     feature_extract = False
-    pretrained = False
+    pretrained = True
     change_activ_func = True
     cloud_train = True
     cutmix_train = True
@@ -42,15 +42,15 @@ def main():
     # Specify directories
     parameters_saved_as = "test"+str(test_num)+"_epoch{}.pth"
     if cloud_train:    
-        data_dir = r"/home/periclesstamatis/artbench-10-imagefolder-split"
-        param_path = os.path.join(r"/home/periclesstamatis/saved_model_parameters",
+        data_dir = r"/home/perryman1997/artbench-10-imagefolder-split"
+        param_path = os.path.join(r"/home/perryman1997/saved_model_parameters",
                               "test"+str(test_num))
         batch_size = 384
     else:    
         data_dir = r"C:\Users\Noel\Documents\THESIS\Data\artbench-10-imagefolder-split"
         param_path = os.path.join(r"C:\Users\Noel\Documents\THESIS\saved_"+str(test_num))
         batch_size = 32
-    
+
     # Initializing the model for our run
     model, input_size = initialize_model(model_name, num_classes,
                                             feature_extract,
@@ -63,14 +63,14 @@ def main():
 
     # Data augmentation and normalization for training/validation/testing
     data_transforms = {
-        'train': T.Compose([T.Pad(padding=24,
-                                  fill=0,
-                                  padding_mode='constant'),
-                            T.RandomAffine(degrees=5,
+        'train': T.Compose([#T.Pad(padding=24,
+                            #      fill=0,
+                            #      padding_mode='constant'),
+                            T.RandomResizedCrop(input_size, scale=(0.2, 1)),
+                            T.RandomAffine(degrees=0,
                                            translate=(0.1, 0.1),
                                            scale=(0.7, 1.3),
                                            interpolation=InterpolationMode.BILINEAR),
-                            T.RandomResizedCrop(input_size, scale=(0.5, 1)),
                             T.RandomHorizontalFlip(),
                             T.RandomVerticalFlip(),
                             T.ToTensor(),

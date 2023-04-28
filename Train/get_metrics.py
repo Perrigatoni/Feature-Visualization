@@ -131,8 +131,8 @@ def main():
                       index=indices,
                       columns=indices)
     print(df)
-    path = f'/home/periclesstamatis/stats/dataframe_test{test_num}'
-    df.to_parquet(path=path)
+    # path = f'/home/periclesstamatis/stats/dataframe_test{test_num}'
+    # df.to_parquet(path=path)
 
     # Save the confmat as figure too.
     confmat.figure_.savefig(f'bestconfmat_test{test_num}.png',

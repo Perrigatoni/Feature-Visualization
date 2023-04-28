@@ -27,8 +27,23 @@ from torchvision import datasets
 from torch.utils.data import DataLoader
 
 
-data_dir = r"C:\Users\Noel\Documents\THESIS STUFF\Data\artbench-10-imagefolder-split"
+data_dir = r"C:\Users\Noel\Documents\THESIS\Data\artbench-10-imagefolder-split"
 batch_size = 384
+
+
+# Method that handles the rgb covariance calculation.
+# Returns a 3x3 torch.Tensor representing the covariance
+# matrix for each image.
+def rgb_cov(im) -> torch.Tensor:
+    """
+    Assuming im is a torch.Tensor of shape (H,W,3)
+    """
+    im_re = im.reshape(-1, 3)
+    # mean_extr = im_re.mean(0, keepdim=True)
+    # im_re = im_re - mean_extr
+    im_re -= im_re.mean(0, keepdim=True)
+    # return 1/(im_re.shape[0]-1) * im_re.T.__matmul__(im_re)
+    return 1/(im_re.shape[0]-1) * torch.matmul(im_re.T, im_re)
 
 
 def main():
@@ -72,21 +87,5 @@ def main():
     print(svd_sqrt)
 
 
-# Method that handles the rgb covariance calculation.
-# Returns a 3x3 torch.Tensor representing the covariance
-# matrix for each image.
-def rgb_cov(im) -> torch.Tensor:
-    """
-    Assuming im is a torch.Tensor of shape (H,W,3)
-    """
-    im_re = im.reshape(-1, 3)
-    # mean_extr = im_re.mean(0, keepdim=True)
-    # im_re = im_re - mean_extr
-    im_re -= im_re.mean(0, keepdim=True)
-    # return 1/(im_re.shape[0]-1) * im_re.T.__matmul__(im_re)
-    return 1/(im_re.shape[0]-1) * torch.matmul(im_re.T, im_re)
-
-
 if __name__ == '__main__':
     main()
-
