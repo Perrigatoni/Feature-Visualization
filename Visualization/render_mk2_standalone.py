@@ -116,7 +116,7 @@ def main():
     threshold = 1024
     parameterization = 'fft'
     # Initializing the shape.
-    shape = [4, 3, 128, 128]
+    shape = [1, 3, 224, 224]
     multiple_objectives = False  # in case of Mixing objs
     operator = 'Positive'
 
@@ -137,9 +137,9 @@ def main():
                                          "//resnet18_torchvision"
                                          "//test65_epoch598.pth"))
     else:
-        model.load_state_dict(torch.load("/home/periclesstamatis/"
-                                         "saved_model_parameters/test65"
-                                         "/test65_epoch598.pth"))
+        model.load_state_dict(torch.load("/home/perryman1997/"
+                                         "saved_model_parameters/test71"
+                                         "/test71_epoch98.pth"))
 
     model.to(device).eval()
 
@@ -171,7 +171,7 @@ def main():
             # Define optimizer and pass the parameters to optimize
             optimizer = torch.optim.Adam(parameter, lr=0.05)
 
-            objective = 1e-2*Diversity_Obj(layer=layer, channel=channel_n)
+            objective = Channel_Obj(layer=layer, channel=channel_n)
             # secondary_obj = Channel_Obj(layer=module_dict[sec_layer_name],
             #                             channel=9)
             for step in tqdm(range(0, threshold), total=threshold):
@@ -203,15 +203,15 @@ def main():
                     r"\Outputs_Feature_Visualization"\
                     rf"\test65_temps\{layer_name.replace(' ', '_')}"
             else:
-                save_path = r"/home/periclesstamatis"\
-                    rf"/outputs/test65/{layer_name.replace(' ', '_')}"
+                save_path = r"/home/perryman1997"\
+                    rf"/outputs/test71/{layer_name.replace(' ', '_')}"
 
             check_path(save_path)
 
             # Save each image
             save_image(image_object(),
                        path=save_path,
-                       name=f"/{str(channel_n)}_{operator}_Diversity.jpg")
+                       name=f"/{str(channel_n)}_{operator}.jpg")
 
             elapsed_time = time.time() - since
             if verbose_logs:
