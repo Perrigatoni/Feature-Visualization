@@ -10,3 +10,14 @@ Visualization/sigmoid.png
 Visualization/Step Func.png
 bestconfmat_test65.png
 dataframe_test65
+Visualization/test69_activations.parquet
+Visualization/test71_activations.parquet
+Weights/resnet18_torchvision/test71_epoch0.pth
+Weights/resnet18_torchvision/test71_epoch5.pth
+Weights/resnet18_torchvision/test71_epoch10.pth
+Weights/resnet18_torchvision/test71_epoch16.pth
+Weights/resnet18_torchvision/test71_epoch30.pth
+Weights/resnet18_torchvision/test71_epoch34.pth
+Weights/resnet18_torchvision/test71_epoch39.pth
+Weights/resnet18_torchvision/test71_epoch48.pth
+Weights/resnet18_torchvision/test71_epoch98.pth

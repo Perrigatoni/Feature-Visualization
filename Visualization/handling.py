@@ -6,7 +6,7 @@ from torchvision.utils import make_grid
 
 
 def main():
-    df = pd.read_parquet(r'C:\Users\Noel\Documents\THESIS\Feature Visualization\Visualization\test65_activations.parquet')
+    df = pd.read_parquet(r'C:\Users\Noel\Documents\THESIS\Feature Visualization\Visualization\test69_activations.parquet')
     layers_of_interest = [name for name in df.columns.tolist() if "conv" in name or "fc" in name]
     for layer in tqdm(layers_of_interest):
         for channel_n in tqdm(range(df[layer].values[0].shape[0])):
@@ -27,7 +27,7 @@ def main():
 
             img = torchvision.transforms.ToPILImage()(grid)
             # img.show()
-            img.save(fp=rf"C:\Users\Noel\Documents\THESIS\Outputs_Feature_Visualization\test65outputs\{layer}\{channel_n}_Negative_Activations.jpg")
+            img.save(fp=rf"C:\Users\Noel\Documents\THESIS\Outputs_Feature_Visualization\resnet10outputs\{layer}\{channel_n}_Negative_Activations.jpg")
             df = df.drop(columns=[f'activations_{layer}_channel_{channel_n}'])
 
 

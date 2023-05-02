@@ -84,6 +84,7 @@ class ResNet(nn.Module):
             relu and maxpool do remain the same for all variants.
             """
         super().__init__()
+        self.layers = layers
         self.in_channels = 64  # initial channels after the first conv layer
         # This is the initial convolution, made to serve as a precursor
         # to any residual blocks that follow. Does NOT change, do not modify.
@@ -98,11 +99,13 @@ class ResNet(nn.Module):
         self.layer1 = self._make_layer(block_tiny, layers[0], out_channels=64, stride=1)
         self.layer2 = self._make_layer(block_tiny, layers[1], out_channels=128, stride=2)
         self.layer3 = self._make_layer(block_tiny, layers[2], out_channels=256, stride=2)
-        # self.layer4 = self._make_layer(block_tiny, layers[3], out_channels=512, stride=2)
-
+        if len(self.layers) == 4: self.layer4 = self._make_layer(block_tiny, layers[3], out_channels=512, stride=2)
         # The above structure is followed by an average pooling layer, an adaptive one at that
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(256, num_classes) # ! CHANGE THAT IN CASE OF RESNETX TO MATCH LAYER 3 OUT
+        if len(self.layers) == 4:    
+            self.fc = nn.Linear(512, num_classes) # ! CHANGE THAT IN CASE OF RESNETX TO MATCH LAYER 3 OUT
+        else:
+            self.fc = nn.Linear(256, num_classes)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -113,7 +116,7 @@ class ResNet(nn.Module):
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
-        # x = self.layer4(x)
+        if len(self.layers) == 4 : x = self.layer4(x)
         # finalize with the last two, common for all variants, layers
         x = self.avgpool(x)
         # x = x.reshape(x.shape[0], -1)  # do not forget to reshape the tensor so it can pass throught the linear layer

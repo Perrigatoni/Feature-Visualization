@@ -110,7 +110,7 @@ def main():
     in given network.
 
     """
-    local_machine_results = False
+    local_machine_results = True
     verbose_logs = False
     # Hyper Parameters
     threshold = 1024
@@ -135,7 +135,7 @@ def main():
         model.load_state_dict(torch.load("C://Users//Noel//Documents//THESIS"
                                          "//Feature Visualization//Weights"
                                          "//resnet18_torchvision"
-                                         "//test65_epoch598.pth"))
+                                         "//test71_epoch98.pth"))
     else:
         model.load_state_dict(torch.load("/home/perryman1997/"
                                          "saved_model_parameters/test71"
@@ -151,71 +151,71 @@ def main():
 
     since = time.time()
 
-    for layer_name, layer in module_dict.items():
-        # layer_name = 'layer3 1 conv2'
-        # layer = model.layer3[1].conv2
-        # Remove loop if you are not interested in creating directories.
-        for channel_n in range(0, layer.out_channels):
+    # for layer_name, layer in module_dict.items():
+    layer_name = 'layer3 1 conv2'
+    layer = model.layer3[1].conv2
+    # Remove loop if you are not interested in creating directories.
+    for channel_n in range(0, 30): # layer.out_channels):
 
-            # Create image object (image to parameterize, starting from noise)
-            if parameterization == "pixel":
-                image_object = image_classes.Pixel_Image(shape=shape)
-                parameter = [image_object.parameter]
-            elif parameterization == "fft":
-                image_object = image_classes.FFT_Image(shape=shape)
-                parameter = [image_object.spectrum_random_noise]
-            else:
-                sys.exit("Unsupported initial image, please select \
-                            parameterization options: 'pixel' or 'fft'!")
+        # Create image object (image to parameterize, starting from noise)
+        if parameterization == "pixel":
+            image_object = image_classes.Pixel_Image(shape=shape)
+            parameter = [image_object.parameter]
+        elif parameterization == "fft":
+            image_object = image_classes.FFT_Image(shape=shape)
+            parameter = [image_object.spectrum_random_noise]
+        else:
+            sys.exit("Unsupported initial image, please select \
+                        parameterization options: 'pixel' or 'fft'!")
 
-            # Define optimizer and pass the parameters to optimize
-            optimizer = torch.optim.Adam(parameter, lr=0.05)
+        # Define optimizer and pass the parameters to optimize
+        optimizer = torch.optim.Adam(parameter, lr=0.05)
 
-            objective = Channel_Obj(layer=layer, channel=channel_n)
-            # secondary_obj = Channel_Obj(layer=module_dict[sec_layer_name],
-            #                             channel=9)
-            for step in tqdm(range(0, threshold), total=threshold):
+        objective = Channel_Obj(layer=layer, channel=channel_n)
+        # secondary_obj = Channel_Obj(layer=module_dict[sec_layer_name],
+        #                             channel=9)
+        for step in tqdm(range(0, threshold), total=threshold):
 
-                def closure() -> float:
-                    optimizer.zero_grad()
-                    # Forward pass
-                    model(transformations.standard_transforms(image_object()))
-                    if multiple_objectives:
-                        loss = operation(operator,
-                                         objective(),
-                                         secondary_obj())
-                        # print(loss)
-                    else:
-                        loss = operation(operator,
-                                         objective())
-                        # print(loss)
-                    if verbose_logs and step == threshold - 1:
-                        print(f"Loss at step {step}:{loss}")
-                    loss.backward()
-                    return loss.item()
+            def closure() -> float:
+                optimizer.zero_grad()
+                # Forward pass
+                model(transformations.standard_transforms(image_object()))
+                if multiple_objectives:
+                    loss = operation(operator,
+                                        objective(),
+                                        secondary_obj())
+                    # print(loss)
+                else:
+                    loss = operation(operator,
+                                        objective())
+                    # print(loss)
+                if verbose_logs and step == threshold - 1:
+                    print(f"Loss at step {step}:{loss}")
+                loss.backward()
+                return loss.item()
 
-                optimizer.step(closure)
+            optimizer.step(closure)
 
-            # Display final image after optimization
-            # display_out(image_object())
-            if local_machine_results:
-                save_path = r"C:\Users\Noel\Documents\THESIS"\
-                    r"\Outputs_Feature_Visualization"\
-                    rf"\test65_temps\{layer_name.replace(' ', '_')}"
-            else:
-                save_path = r"/home/perryman1997"\
-                    rf"/outputs/test71/{layer_name.replace(' ', '_')}"
+        # Display final image after optimization
+        # display_out(image_object())
+        if local_machine_results:
+            save_path = r"C:\Users\Noel\Documents\THESIS"\
+                r"\Outputs_Feature_Visualization"\
+                rf"\test71_epochs_time\{layer_name.replace(' ', '_')}"
+        else:
+            save_path = r"/home/perryman1997"\
+                rf"/outputs/test71/{layer_name.replace(' ', '_')}"
 
-            check_path(save_path)
+        check_path(save_path)
 
-            # Save each image
-            save_image(image_object(),
-                       path=save_path,
-                       name=f"/{str(channel_n)}_{operator}.jpg")
+        # Save each image
+        save_image(image_object(),
+                    path=save_path,
+                    name=f"/{str(channel_n)}_{operator}_epoch98.jpg")
 
-            elapsed_time = time.time() - since
-            if verbose_logs:
-                print(f'Runtime: {elapsed_time}')
+        elapsed_time = time.time() - since
+        if verbose_logs:
+            print(f'Runtime: {elapsed_time}')
 
 
 if __name__ == "__main__":
