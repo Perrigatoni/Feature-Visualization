@@ -21,3 +21,12 @@ Weights/resnet18_torchvision/test71_epoch34.pth
 Weights/resnet18_torchvision/test71_epoch39.pth
 Weights/resnet18_torchvision/test71_epoch48.pth
 Weights/resnet18_torchvision/test71_epoch98.pth
+Dataframes/fc.parquet
+Dataframes/layer2 0 conv2.parquet
+Dataframes/layer3 0 conv2.parquet
+Dataframes/layer3 1 conv2.parquet
+Dataframes/test43_activations.parquet
+Dataframes/test65_activations.parquet
+Dataframes/test69_activations.parquet
+Dataframes/test71_activations.parquet
+Weights/resnet34/test72_epoch446.pth

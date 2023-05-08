@@ -135,7 +135,7 @@ def main():
         model.load_state_dict(torch.load("C://Users//Noel//Documents//THESIS"
                                          "//Feature Visualization//Weights"
                                          "//resnet18_torchvision"
-                                         "//test71_epoch98.pth"))
+                                         "//test65_epoch598.pth"))
     else:
         model.load_state_dict(torch.load("/home/perryman1997/"
                                          "saved_model_parameters/test71"
@@ -201,7 +201,7 @@ def main():
         if local_machine_results:
             save_path = r"C:\Users\Noel\Documents\THESIS"\
                 r"\Outputs_Feature_Visualization"\
-                rf"\test71_epochs_time\{layer_name.replace(' ', '_')}"
+                rf"\test65_epochs_time\{layer_name.replace(' ', '_')}"
         else:
             save_path = r"/home/perryman1997"\
                 rf"/outputs/test71/{layer_name.replace(' ', '_')}"
@@ -211,7 +211,7 @@ def main():
         # Save each image
         save_image(image_object(),
                     path=save_path,
-                    name=f"/{str(channel_n)}_{operator}_epoch98.jpg")
+                    name=f"/{str(channel_n)}_{operator}_epoch598.jpg")
 
         elapsed_time = time.time() - since
         if verbose_logs:
