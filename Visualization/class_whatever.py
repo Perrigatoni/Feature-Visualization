@@ -1,7 +1,5 @@
 from __future__ import absolute_import, print_function
-import os
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torchvision.transforms as T
@@ -9,10 +7,36 @@ import torchvision.transforms as T
 from PIL import Image
 from torchvision import models
 
-import image_classes
-
 from objective_classes_mk2 import *
 
+# This method converts modules into other specified types.
+def module_convertor(model,
+                     module_type_pre,
+                     module_type_post):
+    conversions_made = 0
+    for name, module in model._modules.items():
+        if len(list(model.children())) > 0:
+            model._modules[name] = module_convertor(module,
+                                                    module_type_pre,
+                                                    module_type_post)
+
+        if type(module) == module_type_pre:
+            conversions_made += 1
+            # module_pre = module
+            module_post = module_type_post
+            model._modules[name] = module_post
+    # print(conversions_made)
+    return model
+
+
+def module_fill(model):
+    module_dict = {}
+    for name, mod in model.named_modules():
+        if len(list(mod.children())) == 0:
+            if isinstance(mod, nn.Conv2d) or isinstance(mod, nn.Linear):
+                underscored_name = name.replace('.', ' ')
+                module_dict[underscored_name] = mod
+    return module_dict
 
 
 def main():
@@ -54,36 +78,6 @@ def main():
     prediction = torch.nn.functional.softmax(preds, dim=1)
     print(prediction)
 
-
-
-# This method converts modules into other specified types.
-def module_convertor(model,
-                     module_type_pre,
-                     module_type_post):
-    conversions_made = 0
-    for name, module in model._modules.items():
-        if len(list(model.children())) > 0:
-            model._modules[name] = module_convertor(module,
-                                                    module_type_pre,
-                                                    module_type_post)
-
-        if type(module) == module_type_pre:
-            conversions_made += 1
-            # module_pre = module
-            module_post = module_type_post
-            model._modules[name] = module_post
-    # print(conversions_made)
-    return model
-
-
-def module_fill(model):
-    module_dict = {}
-    for name, mod in model.named_modules():
-        if len(list(mod.children())) == 0:
-            if isinstance(mod, nn.Conv2d) or isinstance(mod, nn.Linear):
-                underscored_name = name.replace('.', ' ')
-                module_dict[underscored_name] = mod
-    return module_dict
 
 if __name__ == "__main__":
     main()

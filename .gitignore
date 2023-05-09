@@ -30,3 +30,5 @@ Dataframes/test65_activations.parquet
 Dataframes/test69_activations.parquet
 Dataframes/test71_activations.parquet
 Weights/resnet34/test72_epoch446.pth
+Weights/resnet34_torchvision/test72_epoch446.pth
+Dataframes/reapeatability_resnet34.parquet
