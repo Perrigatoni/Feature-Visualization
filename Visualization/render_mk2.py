@@ -140,8 +140,8 @@ class Render_Class():
             def closure() -> torch.Tensor:
                 optimizer.zero_grad()
                 # Forward pass
-                model(transformations.standard_transforms(image_object()))
-
+                # model(transformations.standard_transforms(image_object()))
+                model(image_object())
                 if multiple_objectives:
                     loss = operation(operator, objective(), secondary_obj())
                     # print(loss)

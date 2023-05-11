@@ -11,7 +11,7 @@ from torchvision import transforms as T
 from torchvision.transforms import InterpolationMode
 from torch.utils.tensorboard.writer import SummaryWriter
 from torch.utils.data import DataLoader
-from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
+from cosine_annealing_warmup import CosineAnnealingWarmupRestarts
 
 from model_initializer import initialize_model
 from train import train_plain
@@ -26,13 +26,13 @@ def main():
     print(f"Device used: {device}")
 
     # Hyper Parameters
-    test_num = 71
+    test_num = 73
     log_with_TB = True
     model_name = "resnet18"
     num_classes = 10
     num_epochs = 600
     feature_extract = False
-    pretrained = True
+    pretrained = False
     change_activ_func = True
     cloud_train = True
     cutmix_train = True
@@ -144,11 +144,13 @@ def main():
                              momentum=0.9,
                              weight_decay=weight_decay)
 
-    scheduler_ft = CosineAnnealingWarmRestarts(optimizer,
-                                               T_0=50,
-                                               T_mult=1,
-                                               eta_min=1e-5,
-                                               verbose=True)
+    scheduler_ft = CosineAnnealingWarmupRestarts(optimizer,
+                                                 first_cycle_steps=50,
+                                                 cycle_mult=1.0,
+                                                 max_lr=starting_lr,
+                                                 min_lr=1e-7,
+                                                 warmup_steps=5,
+                                                 gamma=1.0)
 
     if log_with_TB:
         writer.add_text('test'+str(test_num),

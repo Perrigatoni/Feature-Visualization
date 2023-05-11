@@ -217,6 +217,9 @@ def train_cutmix(model,
                 # test_acc_history.append(epoch_acc)
                 # Scheduler
                 last_lr = optimizer.param_groups[0]['lr']
+                if scheduler.__class__.__name__ == 'CosineAnnealingWarmupRestarts':
+                    scheduler.step()
+                    last_lr = scheduler.get_lr()
                 # if scheduler.__class__.__name__ == 'ReduceLROnPlateau':
                 #     scheduler.step(epoch_loss)
                 #     last_lr = scheduler._last_lr[0]

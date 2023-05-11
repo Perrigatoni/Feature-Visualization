@@ -51,7 +51,7 @@ def initialize_model(model_name,
     model = None
     input_size = 0
 
-    if model_name == "resnet":
+    if model_name == "resnet18":
         """ Use torchvision's resnet18,34,50,152"""
         if use_pretrained:
             weights = torchvision.models.ResNet18_Weights.DEFAULT
@@ -77,6 +77,31 @@ def initialize_model(model_name,
         # Image input size for the model.
         input_size = 224
     # Add more conditions in the future...
+    elif model_name == "resnet34":
+        """ Use torchvision's resnet18,34,50,152"""
+        if use_pretrained:
+            weights = torchvision.models.ResNet34_Weights.DEFAULT
+        else:
+            weights = None
+        # Pass the actual model from torchvision models to this variable.
+        print(f"Selected Weights are: {weights}")
+        model = models.resnet34(weights=weights)
+        # Check for Activation Function conversion
+        if change_AF:
+            convert_modules = Converter()
+            convert_modules.converter(model,
+                                      nn.ReLU,
+                                      nn.LeakyReLU(inplace=True))
+            print(f'Conversions made: {convert_modules.conversions_made}')
+
+        set_parameter_requires_grad(model, feature_extract)
+        # Get the number of input features in
+        # the Fully Connected layer of our model.
+        num_ftrs = model.fc.in_features
+        # Define and Initialize a new FC layer with the necessary output size.
+        model.fc = nn.Linear(num_ftrs, num_classes)
+        # Image input size for the model.
+        input_size = 224
     elif model_name == "resnet_scratch":
         """ Use scratch made resnets."""
         if use_pretrained:
