@@ -219,7 +219,7 @@ def train_cutmix(model,
                 last_lr = optimizer.param_groups[0]['lr']
                 if scheduler.__class__.__name__ == 'CosineAnnealingWarmupRestarts':
                     scheduler.step()
-                    last_lr = scheduler.get_lr()
+                    last_lr = scheduler.get_lr()[0]
                 # if scheduler.__class__.__name__ == 'ReduceLROnPlateau':
                 #     scheduler.step(epoch_loss)
                 #     last_lr = scheduler._last_lr[0]
