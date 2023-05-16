@@ -15,13 +15,16 @@ import transformations
 
 from objective_classes_mk2 import *
 
+# Execute utilizing GPU if available
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 
 class Render_Class():
-    def __init__(self) -> None:
+    def __init__(self, model) -> None:
         self.flag = False
+        self.model = model
 
     def set_flag(self):
-        # print('Been through here.')
         self.flag = True
 
     def render(self,
@@ -70,23 +73,11 @@ class Render_Class():
             shape = [image_shape, 3, 224, 224]
         multiple_objectives = False
 
-        # Execute utilizing GPU if available
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-        # Load model with no weights.
-        model = models.resnet18(weights=None)
-        # Reshape last layer.
-        in_features = model.fc.in_features
-        model.fc = nn.Linear(in_features, 10)
-        model.load_state_dict(torch.load("C://Users//Noel//Documents//THESIS"
-                                         "//Feature Visualization//Weights"
-                                         "//resnet18_torchvision"
-                                         "//test65_epoch598.pth"))
-        model.to(device).eval()
 
         # Conversion of ReLU activation function to LeakyReLU.
-        module_convertor(model, nn.ReLU, nn.LeakyReLU(inplace=True))
-        module_dict = module_fill(model)
+        module_convertor(self.model, nn.ReLU, nn.LeakyReLU(inplace=True))
+        module_dict = module_fill(self.model)
 
         # Create image object ( image to parameterize, starting from noise)
         if parameterization == "pixel":
@@ -140,7 +131,7 @@ class Render_Class():
             def closure() -> torch.Tensor:
                 optimizer.zero_grad()
                 # Forward pass
-                model(transformations.standard_transforms(image_object()))
+                self.model(transformations.standard_transforms(image_object()))
                 # model(image_object())
                 if multiple_objectives:
                     loss = operation(operator, objective(), secondary_obj())

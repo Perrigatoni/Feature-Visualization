@@ -223,17 +223,17 @@ class Diversity_Obj(Common):
                                                 for i in range(batch)]) / batch)
 
 
-class Diversity_Obj_2(Common):
-    def __init__(self, layer) -> None:
-        super().__init__(layer)
+# class Diversity_Obj_2(Common):
+#     def __init__(self, layer) -> None:
+#         super().__init__(layer)
 
-    def __call__(self)-> torch.Tensor:
-        if self.output[self.layer] is None:
-            exit("Object callable only after forward pass!")
-        batch, channels, _, _ = self.output[self.layer].shape
-        flattened = self.output[self.layer].view(batch, channels, -1)
-        grams = torch.matmul(flattened, torch.transpose(flattened, 1, 2))
-        grams = F.normalize(grams, p=2, dim=(1, 2), eps=1e-10)
-        return - self.scaler * (-sum([sum([torch.sum(grams[i]*grams[j])
-                                           for j in range(batch) if j != i])
-                                      for i in range(batch)]) / batch)
+#     def __call__(self)-> torch.Tensor:
+#         if self.output[self.layer] is None:
+#             exit("Object callable only after forward pass!")
+#         batch, channels, _, _ = self.output[self.layer].shape
+#         flattened = self.output[self.layer].view(batch, channels, -1)
+#         grams = torch.matmul(flattened, torch.transpose(flattened, 1, 2))
+#         grams = F.normalize(grams, p=2, dim=(1, 2), eps=1e-10)
+#         return - self.scaler * (-sum([sum([torch.sum(grams[i]*grams[j])
+#                                            for j in range(batch) if j != i])
+#                                       for i in range(batch)]) / batch)
