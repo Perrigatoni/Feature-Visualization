@@ -23,7 +23,7 @@ class Update_Slider:
 
 def main():
     """Interactive gradio wrapper."""
-    model = models.resnet18(weights=None)
+    model = models.resnet34(weights=None)
     in_features = model.fc.in_features
     # Always reshape the last layer of any imported model to accomodate
     # dataset classes.
@@ -32,8 +32,8 @@ def main():
         torch.load(
             "C://Users//Noel//Documents//THESIS"
             "//Feature Visualization//Weights"
-            "//resnet18_torchvision"
-            "//test65_epoch598.pth"
+            "//resnet34_torchvision"
+            "//test72_epoch446.pth"
         )
     )
     model.to(device).eval()

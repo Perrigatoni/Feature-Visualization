@@ -32,3 +32,9 @@ Dataframes/test71_activations.parquet
 Weights/resnet34/test72_epoch446.pth
 Weights/resnet34_torchvision/test72_epoch446.pth
 Dataframes/reapeatability_resnet34.parquet
+Visualization/Activation_Handling.ipynb
+Dataframes/df_confmat_test65
+Dataframes/repeatability_resnet10.parquet
+Dataframes/repeatability_resnet14.parquet
+Dataframes/repeatability_resnet34.parquet
+Dataframes/test72_activations.parquet

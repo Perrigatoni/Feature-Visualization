@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torchvision.transforms as T
 from torchvision.datasets import ImageFolder
-# from torchvision.models import resnet18, ResNet18_Weights
+from torchvision.models import resnet18, ResNet18_Weights, resnet34
 from scratch_tiny_resnet import ResNet10, ResNetX
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -16,8 +16,8 @@ def module_fill(model):
     for name, mod in model.named_modules():
         if len(list(mod.children())) == 0:
             if isinstance(mod, nn.Conv2d) or isinstance(mod, nn.Linear):
-                underscored_name = name.replace('.', '_')
-                module_dict[underscored_name] = mod
+                # underscored_name = name.replace('.', '_')
+                module_dict[name] = mod
     return module_dict
 
 
@@ -59,14 +59,14 @@ def main():
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     print(device)
 
-    # weights = ResNet18_Weights.DEFAULT
-    # model = resnet18(weights=weights)
-    model = ResNet10()
+    weights = None
+    model = resnet34(weights=weights)
+    # model = ResNet10()
 
     # reshape last layer.
     in_features = model.fc.in_features
     model.fc = nn.Linear(in_features, 10)
-    model.load_state_dict(torch.load(r"C:\Users\Noel\Documents\THESIS\Feature Visualization\Weights\resnet10\test69_epoch549.pth"))
+    model.load_state_dict(torch.load(r"C:\Users\Noel\Documents\THESIS\Feature Visualization\Weights\resnet34_torchvision\test72_epoch446.pth"))
     # Set model to evaluation mode and send to device
     model.to(device).eval()
 
@@ -89,7 +89,7 @@ def main():
     dataloader = DataLoader(dataset=dataset,
                             batch_size=batch_size,
                             shuffle=False,
-                            num_workers=16)
+                            num_workers=2)
     print("Dataloader Initialized. Workers Warming up I guess ;)")
     # ================================================================
     data = []
@@ -129,7 +129,7 @@ def main():
                 data.append(private_dict)
 
     df = pd.DataFrame(data, copy=False)
-    df.to_parquet('test69_activations.parquet')
+    df.to_parquet(r'C:\Users\Noel\Documents\THESIS\Feature Visualization\Dataframes\test72_activations.parquet')
 
 
 if __name__ == "__main__":
