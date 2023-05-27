@@ -7,7 +7,8 @@ import torch
 import torch.nn as nn
 
 from PIL import Image
-from torchvision import models
+from torchvision.models import list_models, get_model
+# from torchvision import models
 # from tqdm import tqdm
 
 import image_classes
@@ -20,12 +21,25 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 class Render_Class():
-    def __init__(self, model) -> None:
+    def __init__(self, change_act_func) -> None:
         self.flag = False
-        self.model = model
+        self.model = None
+        self.change_act_func = change_act_func
+
+    def available_layers(self, model_name):
+        if model_name in list_models():
+            self.model = get_model(
+                model_name.strip("<p>\n/").lower(), weights="DEFAULT"
+            )
+            print(self.model)
+            self.module_dict = module_fill(self.model)
 
     def set_flag(self):
         self.flag = True
+
+    def act_func(self, action_str):
+        action_str = action_str.strip('<p>\n/')
+        self.change_act_func = True if action_str == "Set Leaky ReLU" else False
 
     def render(self,
                type,
@@ -73,10 +87,9 @@ class Render_Class():
             shape = [image_shape, 3, 224, 224]
         multiple_objectives = False
 
-
-
         # Conversion of ReLU activation function to LeakyReLU.
-        module_convertor(self.model, nn.ReLU, nn.LeakyReLU(inplace=True))
+        if self.change_act_func:
+            module_convertor(self.model, nn.ReLU, nn.LeakyReLU(inplace=True))
         module_dict = module_fill(self.model)
 
         # Create image object ( image to parameterize, starting from noise)
@@ -89,7 +102,7 @@ class Render_Class():
         else:
             exit("Unsupported initial image, please select parameterization \
                 options: 'pixel' or 'fft'!")
-        
+
         # Define optimizer and pass the parameters to optimize
         optimizer = torch.optim.Adam(parameter, lr=0.05)
 
@@ -122,7 +135,7 @@ class Render_Class():
             case 'WRT Classes':
                 objective = WRT_Classes(module_dict[layer],
                                         channel,
-                                        model)
+                                        self.model)
             case _:
                 exit('No valid objective was selected from objective list.')
 
@@ -132,7 +145,7 @@ class Render_Class():
                 optimizer.zero_grad()
                 # Forward pass
                 self.model(transformations.standard_transforms(image_object()))
-                # model(image_object())
+                # self.model(image_object())
                 if multiple_objectives:
                     loss = operation(operator, objective(), secondary_obj())
                     # print(loss)
@@ -205,6 +218,10 @@ def module_fill(model):
     for name, mod in model.named_modules():
         if len(list(mod.children())) == 0:
             if isinstance(mod, nn.Conv2d) or isinstance(mod, nn.Linear):
-                underscored_name = name.replace('.', ' ')
-                module_dict[underscored_name] = mod
+                if "downsample" in name:
+                    pass
+                else:
+                    # underscored_name = name.replace('.', ' ')
+                    # module_dict[underscored_name] = mod
+                    module_dict[name] = mod
     return module_dict

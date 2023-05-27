@@ -10,6 +10,23 @@ from torchvision.models import get_model, list_models
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
+class Sel_Model:
+    def __init__(self) -> None:
+        self.model = None
+        self.module_dict = {}
+
+    def available_layers(self, selected_model):
+        if selected_model in list_models():
+            self.model = get_model(
+                selected_model.strip("<p>\n/").lower(), weights="DEFAULT"
+            )
+            self.module_dict = module_fill(self.model)
+            return gr.Radio.update(
+                choices=list(self.module_dict.keys()),
+                value=list(self.module_dict.keys())[0],
+            )
+
+
 class Update_Slider:
     def __init__(self, module_dict):
         self.module_dict = module_dict
@@ -24,20 +41,7 @@ class Update_Slider:
 
 def main():
     """Interactive gradio wrapper."""
-    model = models.googlenet(weights='DEFAULT')
-    # in_features = model.fc.in_features
-    # # Always reshape the last layer of any imported model to accomodate
-    # # dataset classes.
-    # model.fc = nn.Linear(in_features, 10)
-    # model.load_state_dict(torch.load(r"C:\Users\Noel\Documents\THESIS\Feature Visualization\Weights\resnet18_torchvision\test65_epoch598.pth"))
-
-    model.to(device).eval()
-    module_dict = module_fill(model)
-
-    # Define render object.
-    render = Render_Class(model, change_act_func=False if model.__class__.__name__ == "GoogLeNet" else True)
-    update = Update_Slider(module_dict)
-
+    
     with gr.Blocks() as demo:
         gr.Markdown(
             """<H1 style="text-align: center;">Visualize a variety of objectives.</H1>""",
@@ -47,15 +51,6 @@ def main():
             """<H3 style="text-align: center;">Select layers and drag sliders to check out different channels, neurons etc.</H3>""",
             visible=True,
         )
-        # file_output = gr.File(type="file", visible=False)
-        # upload_button = gr.UploadButton("Select parameter path", file_types=["file"], file_count="single")
-        # upload_button.upload(lambda path_obj: render.model.load_state_dict(torch.load(path_obj.orig_name)), upload_button, file_output)
-        # # render.model.load_state_dict(upload_button)
-
-        # input = gr.File(file_count="single")
-        # files = gr.Textbox(visible=False)
-        # show = gr.Button(value="Accept")
-        # show.click(lambda pth_file_wrapper: render.model.load_state_dict(torch.load(pth_file_wrapper.name)), input, files)
 
         list_of_objectives = [
             "DeepDream",
@@ -72,19 +67,28 @@ def main():
         with gr.Tabs():
             for objective_type in list_of_objectives:
                 with gr.Tab(objective_type):
+                    render = Render_Class(
+                        change_act_func=False,
+                        )
                     # type = gr.Markdown(Tab.label, visible=False)
                     type = gr.Markdown(
                         objective_type, visible=False
                     )  # jankiest of solutions but alas...
+                    model_obj = Sel_Model()
+                    model_list = list_models()
+                    model_selection = gr.Radio(
+                        choices=model_list, label="Available Torchvision Models"
+                    )
+
+                    update = Update_Slider(model_obj.module_dict)
+
                     parameterization = gr.Radio(
                         choices=["fft", "pixel"], value="fft", label="Parameterization"
                     )
                     threshold = gr.Slider(
                         0, 1024, step=16, label="Number of Iterations"
                     )
-                    layer_selection = gr.Radio(
-                        choices=list(module_dict.keys()), label="Layer"
-                    )
+                    layer_selection = gr.Radio(choices=[], label="Layer")
                     # Objective class Channel or Neuron
                     if (
                         objective_type == list_of_objectives[1]
@@ -112,9 +116,7 @@ def main():
                         objective_type == list_of_objectives[3]
                         or objective_type == list_of_objectives[4]
                     ):
-                        layer_selection_2 = gr.Radio(
-                            choices=list(module_dict.keys()), label="Second layer"
-                        )
+                        layer_selection_2 = gr.Radio(choices=[], label="Second layer")
                         channel_selection = gr.Slider(
                             0, 511, step=1, label="Channel Number"
                         )
@@ -148,6 +150,11 @@ def main():
                             layer_selection_2,
                             channel_selection_2,
                         ]
+                        model_selection.change(
+                            fn=model_obj.available_layers,
+                            inputs=model_selection,
+                            outputs=layer_selection_2,
+                        )
                     # Objective class Diversity
                     elif objective_type == list_of_objectives[5]:
                         channel_selection = gr.Slider(
@@ -206,9 +213,20 @@ def main():
                         ]
                     """ Check out the Huggingface introduction
                         to gradio blocks."""
-                    layer_selection.change(
-                        fn=update, inputs=layer_selection, outputs=channel_selection
+                    model_selection.change(
+                        fn=model_obj.available_layers,
+                        inputs=model_selection,
+                        outputs=layer_selection,
                     )
+                    model_selection.change(
+                        fn=render.available_layers,
+                        inputs=model_selection,
+                        outputs=None,
+                    )
+
+                    # layer_selection.update(
+                    #     fn=update, inputs=layer_selection, outputs=channel_selection
+                    # )
                     buttons[objective_type] = gr.Button("Create")
                     output[objective_type] = gr.Image().style(height=224)
                     start = buttons[objective_type].click(
@@ -219,7 +237,6 @@ def main():
                     stop.click(
                         fn=render.set_flag, inputs=None, outputs=None, cancels=[start]
                     )
-                    # TODO: Check if cancel can interrupt a function execution
 
     demo.queue(concurrency_count=1, max_size=1).launch()
 

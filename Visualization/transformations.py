@@ -38,6 +38,6 @@ def standard_transforms(tensor) -> torch.Tensor:
                       scale=scale_selected,
                       shear=[0])
     # Apply blurring on each image. Seems to discourage noise further,
-    # but the result is too subtle, or unwanted.
+    # but the result is either too subtle, or unwanted.
     # tensor = F.gaussian_blur(tensor, kernel_size=[5, 5], sigma=[1.0])
     return tensor

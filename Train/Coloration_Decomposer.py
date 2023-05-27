@@ -7,7 +7,7 @@
     color decorellation in the image_classes.py, so as to achieve results based
     in a decorellated space both spatially but also chromatically.
 
-    Does not exactly implement Cholesky Decomposition as proposed by the Lucid 
+    Does not exactly implement Cholesky Decomposition as proposed by the Lucid
     authors but instead achieves similar results.
 
     For more information, check this blogpost:

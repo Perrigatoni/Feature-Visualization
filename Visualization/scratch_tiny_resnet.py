@@ -102,9 +102,13 @@ class ResNet(nn.Module):
         if len(self.layers) == 4: self.layer4 = self._make_layer(block_tiny, layers[3], out_channels=512, stride=2)
         # The above structure is followed by an average pooling layer, an adaptive one at that
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        if len(self.layers) == 4:    
+        if len(self.layers) == 4:
+            self.fc0 = nn.Linear(512, 1024)
+            self.fc1 = nn.Linear(1024, 512)
             self.fc = nn.Linear(512, num_classes) # ! CHANGE THAT IN CASE OF RESNETX TO MATCH LAYER 3 OUT
         else:
+            self.fc0 = nn.Linear(256, 1024)
+            self.fc1 = nn.Linear(1024, 256)
             self.fc = nn.Linear(256, num_classes)
 
     def forward(self, x):
@@ -121,6 +125,8 @@ class ResNet(nn.Module):
         x = self.avgpool(x)
         # x = x.reshape(x.shape[0], -1)  # do not forget to reshape the tensor so it can pass throught the linear layer
         x = torch.flatten(x, 1)
+        x = self.fc0(x)
+        x = self.fc1(x)
         x = self.fc(x)
         return x
 

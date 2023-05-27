@@ -152,10 +152,10 @@ def main():
     since = time.time()
 
     # for layer_name, layer in module_dict.items():
-    layer_name = 'layer3 1 conv2'
-    layer = model.layer3[1].conv2
+    layer = model.fc
+    layer_name = "fc"
     # Remove loop if you are not interested in creating directories.
-    for channel_n in range(0, 30): # layer.out_channels):
+    for channel_n in range(0, layer.out_features):
 
         # Create image object (image to parameterize, starting from noise)
         if parameterization == "pixel":
@@ -201,7 +201,7 @@ def main():
         if local_machine_results:
             save_path = r"C:\Users\Noel\Documents\THESIS"\
                 r"\Outputs_Feature_Visualization"\
-                rf"\test65_epochs_time\{layer_name.replace(' ', '_')}"
+                rf"\test65outputs\{layer_name.replace(' ', '_')}"
         else:
             save_path = r"/home/perryman1997"\
                 rf"/outputs/test71/{layer_name.replace(' ', '_')}"
@@ -213,9 +213,9 @@ def main():
                     path=save_path,
                     name=f"/{str(channel_n)}_{operator}_epoch598.jpg")
 
-        elapsed_time = time.time() - since
-        if verbose_logs:
-            print(f'Runtime: {elapsed_time}')
+    elapsed_time = time.time() - since
+    if verbose_logs:
+        print(f'Runtime: {elapsed_time}')
 
 
 if __name__ == "__main__":

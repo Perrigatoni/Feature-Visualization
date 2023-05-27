@@ -7,25 +7,36 @@ import torch.fft
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-class RGB_decorrelation():
+# Derives from ProGamerGov's implementation of color decorellation.
+class RGB_decorrelation:
     def __init__(self):
-        self.color_correlation_svd_sqrt = torch.tensor([[-0.2051,  0.0626,  0.0137],
-                                                        [-0.2001, -0.0070, -0.0286],
-                                                        [-0.1776, -0.0644,  0.0164]])
+        self.color_correlation_svd_sqrt = torch.tensor(
+            [
+                [-0.2051, 0.0626, 0.0137],
+                [-0.2001, -0.0070, -0.0286],
+                [-0.1776, -0.0644, 0.0164],
+            ]
+        )
         # IMAGENET VALUES
         # self.color_correlation_svd_sqrt = torch.tensor([[0.26, 0.09, 0.02],
         #                                                [0.27, 0.00, -0.05],
         #                                                [0.27, -0.09, 0.03]])
-        self.max_norm_svd_sqrt = torch.max(torch.linalg.norm(self.color_correlation_svd_sqrt, axis=0))
-        self.color_correlation_normalized = (self.color_correlation_svd_sqrt / self.max_norm_svd_sqrt).to(device)
+        self.max_norm_svd_sqrt = torch.max(
+            torch.linalg.norm(self.color_correlation_svd_sqrt, axis=0)
+        )
+        self.color_correlation_normalized = (
+            self.color_correlation_svd_sqrt / self.max_norm_svd_sqrt
+        ).to(device)
 
     def linearly_decorrelated_color_space(self, tensor_img):
         # permute tensor to appropriate shape for matrix multiplication
         tensor_permuted = tensor_img.permute(0, 2, 3, 1)
-        #print(f"Permuted tensor image is of shape: {tensor_permuted.shape}")
+        # print(f"Permuted tensor image is of shape: {tensor_permuted.shape}")
         # Multiply with the correlation matrix (product of Cholesky decomp.)
-        tensor_permuted = torch.matmul(tensor_permuted, self.color_correlation_normalized.T)
-        #print(tensor_permuted.shape)
+        tensor_permuted = torch.matmul(
+            tensor_permuted, self.color_correlation_normalized.T
+        )
+        # print(tensor_permuted.shape)
         # Permute image tensor back to more common/usable shape
         tensor_img = tensor_permuted.permute(0, 3, 1, 2)
         return tensor_img
@@ -36,15 +47,17 @@ class Pixel_Image(RGB_decorrelation):
         super().__init__()
         self.shape = shape
         self.sd = sd or 0.01
-        self.parameter = (torch.randn(*self.shape) * self.sd).to(device).requires_grad_(True)
+        self.parameter = (
+            (torch.randn(*self.shape) * self.sd).to(device).requires_grad_(True)
+        )
 
     def __call__(self) -> torch.Tensor:
-        output = self.linearly_decorrelated_color_space(self.parameter)
+        # output = self.linearly_decorrelated_color_space(self.parameter)
+        output = self.parameter
         return torch.sigmoid(output)  # get valid RGB with sigmoid
 
 
 class FFT_Image(RGB_decorrelation):
-    
     def __init__(self, shape, sd=None, decay_power=None) -> None:
         super().__init__()
         self.shape = shape
@@ -54,13 +67,17 @@ class FFT_Image(RGB_decorrelation):
         self.sd = sd or 0.01
         self.decay_power = decay_power or 1
 
-        self.spectrum_random_noise = (torch.randn(*self.real_size) * self.sd).to(device).requires_grad_(True)
+        self.spectrum_random_noise = (
+            (torch.randn(*self.real_size) * self.sd).to(device).requires_grad_(True)
+        )
         # So this operation just replaces the values in the
-        # array of sample frequencies with a predetermined value 
+        # array of sample frequencies with a predetermined value
         # to replace those that are too low... e.g. 0.0 is replaced
         # with 0.0045.
-        scale = 1.0 / np.maximum(self.freq2d, 1.0/max(self.w, self.h)) ** self.decay_power
-        #scale = 1.0 / np.maximum(self.freq2d, 0.001)
+        scale = (
+            1.0 / np.maximum(self.freq2d, 1.0 / max(self.w, self.h)) ** self.decay_power
+        )
+        # scale = 1.0 / np.maximum(self.freq2d, 0.001)
         # scale = np.maximum(self.freq2d, 1.0/max(self.w, self.h))
         # Clone the tensor to suppress warning.
         # The three dots, called ellipsis, denotes "as many/as needed".
@@ -87,28 +104,30 @@ class FFT_Image(RGB_decorrelation):
     def __call__(self) -> torch.Tensor:
         """An image paramaterization using 2D Fourier coefficients.
 
-            The coefficients further from the origin (frequency origin (0,0),
-            referring to the usual u and v spectrum frequencies when
-            computing DFT) are multiplied with the inverse of their frequency
-            as a means to scale their energy. It seems to be a way of directly
-            'impacting' high frequency noisy patterns in the image, promoting
-            the values of low frequency coefficients."""
+        The coefficients further from the origin (frequency origin (0,0),
+        referring to the usual u and v spectrum frequencies when
+        computing DFT) are multiplied with the inverse of their frequency
+        as a means to scale their energy. It seems to be a way of directly
+        'impacting' high frequency noisy patterns in the image, promoting
+        the values of low frequency coefficients."""
         # Convolution of Fourier coefficients with scale array.
         regularized_coefficient_array = self.scale * self.spectrum_random_noise
         # Requires torch version greater than 1.7.0
         if type(regularized_coefficient_array) is not torch.complex64:
-            regularized_coefficient_array = torch.view_as_complex(regularized_coefficient_array)
+            regularized_coefficient_array = torch.view_as_complex(
+                regularized_coefficient_array
+            )
         # Computes the inverse FFT with respect to Hermitian property
         # of the input tensor.
         # Hermitian property -- "The input has complex conjugate
         # with same value but different sign in order to cancel out,
         # returning a scalar value."
-        tensor_image = torch.fft.irfftn(regularized_coefficient_array,
-                                        s=(self.h, self.w),
-                                        norm='ortho') # Need to define orthonormal basis!
+        tensor_image = torch.fft.irfftn(
+            regularized_coefficient_array, s=(self.h, self.w), norm="ortho"
+        )  # Need to define orthonormal basis!
 
-        tensor_image = tensor_image[:self.batch, :self.channels, :self.h, :self.w]
-        # Indeed this seems to saturate colors... don't know why, inadequate 
+        tensor_image = tensor_image[: self.batch, : self.channels, : self.h, : self.w]
+        # Indeed this seems to saturate colors... don't know why, inadequate
         # documentation on Lucid's implementation
         magic_const = 4.0
         tensor_image = tensor_image / magic_const
@@ -117,10 +136,9 @@ class FFT_Image(RGB_decorrelation):
 
 
 """ Does not work, obviously since you just convert
-    to frequency and do no other operation before
+    to frequency and do no other operation (filtering) before
     inverting the conversion.
 """
-
 
 # class FFT_Image2():
 #     def __init__(self, shape, sd=None, decay_power=None) -> None:
