@@ -7,9 +7,6 @@ import torch
 import torch.nn as nn
 
 from PIL import Image
-from torchvision.models import list_models, get_model
-# from torchvision import models
-# from tqdm import tqdm
 
 import image_classes
 import transformations

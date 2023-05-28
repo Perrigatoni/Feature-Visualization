@@ -67,6 +67,19 @@ def module_convertor(model, module_type_pre, module_type_post):
 
 
 def module_fill(model):
+    """Use this method to create dictionary of all available 
+        CNN Conv2d and Linear layers. Commonly used to gain
+        access to naming schemes of different layers in or out of
+        Sequential containers. Would advise to always let this
+        method fill the respective dictionary so as to reference
+        model layers later on when visualizing features.
+
+        Args:
+            model: nn.Module (the model class to use)
+        Returns:
+            module_dict: dict (dictionary with named conv
+                                and linear modules)
+        """
     module_dict = {}
     for name, mod in model.named_modules():
         if len(list(mod.children())) == 0:
@@ -214,7 +227,7 @@ class Render_Class:
                 secondary_obj = Channel_Obj(self.module_dict[layer2], channel2)
                 multiple_objectives = True
             case "Diversity":
-                objective = 1e-2 * Diversity_Obj(self.module_dict[layer], channel)
+                objective = Diversity_Obj(self.module_dict[layer], channel)
             case _:
                 exit("No valid objective was selected from objective list.")
 

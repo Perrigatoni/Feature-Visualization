@@ -49,8 +49,6 @@ def save_image(tensor: torch.Tensor,
     if len(image.shape) == 4:
         image = np.concatenate(image, axis=1)
     check_path(path)
-    # if os.path.exists(path) is False:
-    #     os.mkdir(path)
     Image.fromarray(image).save(path + name)
 
 
@@ -73,20 +71,28 @@ def module_convertor(model,
             model._modules[name] = module_convertor(module,
                                                     module_type_pre,
                                                     module_type_post)
-
         if type(module) == module_type_pre:
             conversions_made += 1
             # module_pre = module
             module_post = module_type_post
             model._modules[name] = module_post
-    # print(conversions_made)
     return model
 
 
 def module_fill(model):
-    """Returns a dictionary with entries of all conv
-        layers present, as well as any linear ones
-        (to accommodate for the fc layers.)"""
+    """Use this method to create dictionary of all available
+        CNN Conv2d and Linear layers. Commonly used to gain
+        access to naming schemes of different layers in or out of
+        Sequential containers. Would advise to always let this
+        method fill the respective dictionary so as to reference
+        model layers later on when visualizing features.
+
+        Args:
+            model: nn.Module (the model class to use)
+        Returns:
+            module_dict: dict (dictionary with named conv
+                                and linear modules)
+        """
     module_dict = {}
     for name, mod in model.named_modules():
         if len(list(mod.children())) == 0:
@@ -108,6 +114,10 @@ def main():
     import own weights and visualize personalized images,
     create elaborate save-files for all layers/channels
     in given network.
+
+    If you plan to mix objectives, remove outer for loop
+    and pass the layer type and name (so as to save the
+    respective visualization)
 
     """
     local_machine_results = True
@@ -147,75 +157,76 @@ def main():
     module_convertor(model,
                      nn.ReLU,
                      nn.LeakyReLU(inplace=True))
+    # Fill Module Dict
     module_dict = module_fill(model)
-
+    # Time logging
     since = time.time()
 
-    # for layer_name, layer in module_dict.items():
-    layer = model.fc
-    layer_name = "fc"
-    # Remove loop if you are not interested in creating directories.
-    for channel_n in range(0, layer.out_features):
+    for layer_name, layer in module_dict.items():
+    # layer = model.fc
+    # layer_name = "fc"
+        # Remove outer loop if you are not interested in creating directories.
+        for channel_n in range(0, layer.out_channels):
 
-        # Create image object (image to parameterize, starting from noise)
-        if parameterization == "pixel":
-            image_object = image_classes.Pixel_Image(shape=shape)
-            parameter = [image_object.parameter]
-        elif parameterization == "fft":
-            image_object = image_classes.FFT_Image(shape=shape)
-            parameter = [image_object.spectrum_random_noise]
-        else:
-            sys.exit("Unsupported initial image, please select \
-                        parameterization options: 'pixel' or 'fft'!")
+            # Create image object (image to parameterize, starting from noise)
+            if parameterization == "pixel":
+                image_object = image_classes.Pixel_Image(shape=shape)
+                parameter = [image_object.parameter]
+            elif parameterization == "fft":
+                image_object = image_classes.FFT_Image(shape=shape)
+                parameter = [image_object.spectrum_random_noise]
+            else:
+                sys.exit("Unsupported initial image, please select \
+                            parameterization options: 'pixel' or 'fft'!")
 
-        # Define optimizer and pass the parameters to optimize
-        optimizer = torch.optim.Adam(parameter, lr=0.05)
+            # Define optimizer and pass the parameters to optimize
+            optimizer = torch.optim.Adam(parameter, lr=0.05)
 
-        objective = Channel_Obj(layer=layer, channel=channel_n)
-        # secondary_obj = Channel_Obj(layer=module_dict[sec_layer_name],
-        #                             channel=9)
-        for step in tqdm(range(0, threshold), total=threshold):
+            objective = Channel_Obj(layer=layer, channel=channel_n)
+            # secondary_obj = Channel_Obj(layer=module_dict[sec_layer_name],
+            #                             channel=9)
+            for step in tqdm(range(0, threshold), total=threshold):
 
-            def closure() -> float:
-                optimizer.zero_grad()
-                # Forward pass
-                model(transformations.standard_transforms(image_object()))
-                if multiple_objectives:
-                    loss = operation(operator,
-                                        objective(),
-                                        secondary_obj())
-                    # print(loss)
-                else:
-                    loss = operation(operator,
-                                        objective())
-                    # print(loss)
-                if verbose_logs and step == threshold - 1:
-                    print(f"Loss at step {step}:{loss}")
-                loss.backward()
-                return loss.item()
+                def closure() -> float:
+                    optimizer.zero_grad()
+                    # Forward pass
+                    model(transformations.standard_transforms(image_object()))
+                    if multiple_objectives:
+                        loss = operation(operator,
+                                            objective(),
+                                            secondary_obj())
+                        # print(loss)
+                    else:
+                        loss = operation(operator,
+                                            objective())
+                        # print(loss)
+                    if verbose_logs and step == threshold - 1:
+                        print(f"Loss at step {step}:{loss}")
+                    loss.backward()
+                    return loss.item()
 
-            optimizer.step(closure)
+                optimizer.step(closure)
 
-        # Display final image after optimization
-        # display_out(image_object())
-        if local_machine_results:
-            save_path = r"C:\Users\Noel\Documents\THESIS"\
-                r"\Outputs_Feature_Visualization"\
-                rf"\test65outputs\{layer_name.replace(' ', '_')}"
-        else:
-            save_path = r"/home/perryman1997"\
-                rf"/outputs/test71/{layer_name.replace(' ', '_')}"
+            # Display final image after optimization
+            display_out(image_object())
+            if local_machine_results:
+                save_path = r"C:\Users\Noel\Documents\THESIS"\
+                    r"\Outputs_Feature_Visualization"\
+                    rf"\test65outputs\{layer_name.replace(' ', '_')}"
+            else:
+                save_path = r"/home/perryman1997"\
+                    rf"/outputs/test71/{layer_name.replace(' ', '_')}"
 
-        check_path(save_path)
+            check_path(save_path)
 
-        # Save each image
-        save_image(image_object(),
-                    path=save_path,
-                    name=f"/{str(channel_n)}_{operator}_epoch598.jpg")
+            # Save each image
+            # save_image(image_object(),
+            #             path=save_path,
+            #             name=f"/{str(channel_n)}_{operator}.jpg")
 
-    elapsed_time = time.time() - since
-    if verbose_logs:
-        print(f'Runtime: {elapsed_time}')
+        elapsed_time = time.time() - since
+        if verbose_logs:
+            print(f'Runtime: {elapsed_time}')
 
 
 if __name__ == "__main__":

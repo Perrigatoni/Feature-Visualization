@@ -207,7 +207,7 @@ class Diversity_Obj(Common):
     def __init__(self, layer, channel) -> None:
         super().__init__(layer)
         self.channel = channel
-        self.scaler = 1e-2
+        self.scaler = 100
 
     def __call__(self) -> torch.Tensor:
         if self.output[self.layer] is None:
