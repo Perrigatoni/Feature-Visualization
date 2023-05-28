@@ -21,25 +21,13 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 class Render_Class():
-    def __init__(self, change_act_func) -> None:
+    def __init__(self, model, change_act_func) -> None:
         self.flag = False
-        self.model = None
+        self.model = model
         self.change_act_func = change_act_func
-
-    def available_layers(self, model_name):
-        if model_name in list_models():
-            self.model = get_model(
-                model_name.strip("<p>\n/").lower(), weights="DEFAULT"
-            )
-            print(self.model)
-            self.module_dict = module_fill(self.model)
 
     def set_flag(self):
         self.flag = True
-
-    def act_func(self, action_str):
-        action_str = action_str.strip('<p>\n/')
-        self.change_act_func = True if action_str == "Set Leaky ReLU" else False
 
     def render(self,
                type,

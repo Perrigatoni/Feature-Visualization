@@ -24,7 +24,7 @@ class Update_Slider:
 
 def main():
     """Interactive gradio wrapper."""
-    model = models.googlenet(weights='DEFAULT')
+    model = models.resnet18(weights='DEFAULT')
     # in_features = model.fc.in_features
     # # Always reshape the last layer of any imported model to accomodate
     # # dataset classes.
@@ -35,7 +35,7 @@ def main():
     module_dict = module_fill(model)
 
     # Define render object.
-    render = Render_Class(model, change_act_func=False if model.__class__.__name__ == "GoogLeNet" else True)
+    render = Render_Class(model, change_act_func=False if model.__class__ == "GoogLeNet" else True)
     update = Update_Slider(module_dict)
 
     with gr.Blocks() as demo:
@@ -47,15 +47,6 @@ def main():
             """<H3 style="text-align: center;">Select layers and drag sliders to check out different channels, neurons etc.</H3>""",
             visible=True,
         )
-        # file_output = gr.File(type="file", visible=False)
-        # upload_button = gr.UploadButton("Select parameter path", file_types=["file"], file_count="single")
-        # upload_button.upload(lambda path_obj: render.model.load_state_dict(torch.load(path_obj.orig_name)), upload_button, file_output)
-        # # render.model.load_state_dict(upload_button)
-
-        # input = gr.File(file_count="single")
-        # files = gr.Textbox(visible=False)
-        # show = gr.Button(value="Accept")
-        # show.click(lambda pth_file_wrapper: render.model.load_state_dict(torch.load(pth_file_wrapper.name)), input, files)
 
         list_of_objectives = [
             "DeepDream",
