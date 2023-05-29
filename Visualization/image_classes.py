@@ -78,7 +78,6 @@ class FFT_Image(RGB_decorrelation):
             1.0 / np.maximum(self.freq2d, 1.0 / max(self.w, self.h)) ** self.decay_power
         )
         # scale = 1.0 / np.maximum(self.freq2d, 0.001)
-        # scale = np.maximum(self.freq2d, 1.0/max(self.w, self.h))
         # Clone the tensor to suppress warning.
         # The three dots, called ellipsis, denotes "as many/as needed".
         # Labeling the other dimensions with None creates dummy ones.
@@ -133,23 +132,3 @@ class FFT_Image(RGB_decorrelation):
         tensor_image = tensor_image / magic_const
         tensor_image = self.linearly_decorrelated_color_space(tensor_image)
         return torch.sigmoid(tensor_image)
-
-
-""" Does not work, obviously since you just convert
-    to frequency and do no other operation (filtering) before
-    inverting the conversion.
-"""
-
-# class FFT_Image2():
-#     def __init__(self, shape, sd=None, decay_power=None) -> None:
-#         self.real_size = shape
-#         self.sd = 0.01
-#         self.real_image_tensor = (torch.randn(*self.real_size) * self.sd).to(device).requires_grad_(True)
-
-#     def __call__(self) -> torch.Tensor:
-#         fft_image_tensor = torch.fft.rfftn(self.real_image_tensor).to(device)
-#         #fft_image_tensor = fft_image_tensor * 2
-#         tensor_image = torch.fft.irfftn(fft_image_tensor).to(device)
-#         # magic_const = 0.10
-#         # tensor_image = tensor_image / magic_const
-#         return torch.sigmoid(tensor_image)

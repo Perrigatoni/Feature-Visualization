@@ -93,10 +93,10 @@ def module_fill(model):
 
 
 class Render_Class:
-    def __init__(self, change_act_func) -> None:
-        self.flag = False
+    def __init__(self) -> None:
+        self.abort_flag = False
         self.model = None
-        self.change_act_func = change_act_func
+        self.change_act_func = False
         self.module_dict = {}
 
     def available_layers(self, model_name):
@@ -126,15 +126,16 @@ class Render_Class:
 
     def abort_operation(self):
         """Aborts render operation if needed."""
-        self.flag = True
+        self.abort_flag = True
 
-    def act_func(self, action_str):
+    def handle_act_func(self, act_func):
         """Handles the change of activation function to Leaky ReLU.
 
             Leaky ReLU behaves a bit better when trying to visualize features.
         """
-        action_str = action_str.strip("<p>\n/")
-        self.change_act_func = True if action_str == "Set Leaky ReLU" else False
+        act_func = act_func.strip("<p>\n/")
+        self.change_act_func = True if "Leaky" in act_func else False
+        # print(self.change_act_func)
 
     def render(
         self,
@@ -178,7 +179,7 @@ class Render_Class:
         Return:
             PIL.Image
         """
-        self.flag = False
+        self.abort_flag = False
         self.model.to(device).eval()
         # Hyper Parameters
         threshold = threshold or 256
@@ -249,8 +250,7 @@ class Render_Class:
                 return loss
 
             optimizer.step(closure)
-            if self.flag:
+            if self.abort_flag:
                 return None  # display_out(image_object())
-
         # Display final image after optimization
         return display_out(image_object())
