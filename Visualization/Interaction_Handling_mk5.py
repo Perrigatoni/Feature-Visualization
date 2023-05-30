@@ -4,7 +4,7 @@ import gradio as gr
 import torch
 import torchvision
 
-from render_mk4 import Render_Class
+from render_mk5 import Render_Class
 from torchvision.models import list_models
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -49,9 +49,11 @@ def main():
             choices=["ReLU", "Leaky ReLU"],
             label="Select Leaky ReLU if visualization appears empty.",
         )
-        textbox = gr.Textbox(label="Provide .pth file for\
-                              parameter loading to CNN.")
 
+        upload = gr.UploadButton(label="Upload appropriate .pth file.",
+                                 file_types=["pth"],
+                                 file_count="single"
+        )
         list_of_objectives = [
             "DeepDream",
             "Channel",
@@ -212,9 +214,9 @@ def main():
                         inputs=layer_selection,
                         outputs=channel_selection,
                     )
-                    textbox.submit(
+                    upload.upload(
                         fn=render_instances[objective_type].state_dict_upload,
-                        inputs=[textbox],
+                        inputs=[upload],
                         outputs=None,
                     )
                     # Make Buttons

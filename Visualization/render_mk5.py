@@ -141,23 +141,23 @@ class Render_Class:
             )
 
     def state_dict_upload(self, pth_file):
-        if os.path.exists(pth_file.strip("\"\"")):
-            self.file_path = pth_file.strip("\"\"")  # .name
-            state_dict = torch.load(self.file_path,
-                                    map_location=torch.device("cpu"))
-            dataset_out_classes = get_out_classes(state_dict,
-                                                  self.model.state_dict())
-            classifier_name = list(self.module_dict)[-1]
-            classifier = getattr(self.model, classifier_name)
-            classifier.out_features = dataset_out_classes
-            self.module_dict = module_fill(self.model)
-            print(self.model)
-            self.model.load_state_dict(torch.load(self.file_path))
-        else:
-            self.model = get_model(
-                self.model_name.strip("<p>\n/").lower(), weights="DEFAULT"
-            )
-            self.module_dict = module_fill(self.model)
+        # if os.path.exists(pth_file.strip("\"\"")):
+        self.file_path = pth_file.name
+        state_dict = torch.load(self.file_path,
+                                map_location=torch.device("cpu"))
+        dataset_out_classes = get_out_classes(state_dict,
+                                              self.model.state_dict())
+        classifier_name = list(self.module_dict)[-1]
+        classifier = getattr(self.model, classifier_name)
+        classifier.out_features = dataset_out_classes
+        self.module_dict = module_fill(self.model)
+        print(self.model)
+        self.model.load_state_dict(torch.load(self.file_path))
+        # else:
+            # self.model = get_model(
+            #     self.model_name.strip("<p>\n/").lower(), weights="DEFAULT"
+            # )
+            # self.module_dict = module_fill(self.model)
 
     def update_sliders(self, layer_name):
         """Update channel sliders' maximum cap."""
