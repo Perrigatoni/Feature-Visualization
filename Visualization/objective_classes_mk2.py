@@ -9,15 +9,21 @@ import torch.nn.functional as F
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def operation(operator, loss1, loss2=torch.zeros(1,).to(device)):
+def operation(
+    operator,
+    loss1,
+    loss2=torch.zeros(
+        1,
+    ).to(device),
+):
     match operator:
-        case '+':
+        case "+":
             loss = loss1 + loss2
-        case '-':
+        case "-":
             loss = loss1 - loss2
-        case 'Negative':
-            loss = - loss1
-        case 'Positive':
+        case "Negative":
+            loss = -loss1
+        case "Positive":
             loss = loss1
         case _:
             loss = loss1
@@ -28,6 +34,7 @@ def operation(operator, loss1, loss2=torch.zeros(1,).to(device)):
 # Parent class used for hooking functionality on all objectives
 class Common:
     """Parent class to handle Inheritance from."""
+
     def __init__(self, layer) -> None:
         self.hook = layer.register_forward_hook(self.hook_function)
         self.layer = layer
@@ -50,18 +57,22 @@ class Common:
 
 
 class DeepDream_Obj(Common):
+    """Visualize a layer's activation"""
+
     def __init__(self, layer) -> None:
         super().__init__(layer)
 
     def __call__(self):
         if self.output[self.layer] is None:
             exit("Object callable only after forward pass!")
-        dream = self.output[self.layer]**2  # like mse loss
+        dream = self.output[self.layer] ** 2  # like mse loss
         loss_local = -dream.mean()
         return self.scaler * loss_local
 
 
 class Channel_Obj(Common):
+    """Visualize a Channel's activation"""
+
     def __init__(self, layer, channel) -> None:
         super().__init__(layer)
         self.channel = channel
@@ -75,8 +86,9 @@ class Channel_Obj(Common):
 
 
 class Neuron_Obj(Common):
-    def __init__(self, layer, channel,
-                 spatial_x=None, spatial_y=None):
+    """Visualize a single Neuron's activation"""
+
+    def __init__(self, layer, channel, spatial_x=None, spatial_y=None):
         super().__init__(layer)
         self.channel = channel
         self.x = spatial_x
@@ -89,14 +101,16 @@ class Neuron_Obj(Common):
             self.x = self.output[self.layer].shape[2] // 2
         if self.y is None:
             self.y = self.output[self.layer].shape[3] // 2
-        neuron_tensor = self.output[self.layer][:, :, self.x:self.x+1, self.y:self.y+1]
+        neuron_tensor = self.output[self.layer][
+            :, :, self.x: self.x + 1, self.y: self.y + 1
+        ]
         channel_tensor = neuron_tensor[:, self.channel]
         loss_local = -channel_tensor.mean()
         return self.scaler * loss_local
 
 
 class Channel_Weight(Common):
-    """ Linearly weighted channel activation as objective.
+    """Linearly weighted channel activation as objective.
 
     Args:
         weight: a torch.Tensor vector of same lenght as channels in
@@ -104,6 +118,7 @@ class Channel_Weight(Common):
                 (e.g weight = torch.rand(256, device=device)
 
     """
+
     def __init__(self, layer, weight) -> None:
         super().__init__(layer)
         self.weight = weight
@@ -114,7 +129,7 @@ class Channel_Weight(Common):
 
 
 class Direction(Common):
-    """ Visualize a direction
+    """Visualize a direction
 
     Args:
         layer: specific layer in model (passed as type and not string
@@ -126,6 +141,7 @@ class Direction(Common):
         loss. torch.Tensor
 
     """
+
     def __init__(self, layer, direction) -> None:
         super().__init__(layer)
         self.direction = direction
@@ -134,13 +150,17 @@ class Direction(Common):
         # after reshaping the random direction to represent a tensor of 4
         # dimensions with the second one being the channels, it returns
         # the negative of the mean of the cosine similarity between them
-        loss_local = -nn.CosineSimilarity(dim=1)(self.direction.reshape((1,
-                                                 -1, 1, 1)),
-                                                 self.output[self.layer]).mean()
+        loss_local = -nn.CosineSimilarity(dim=1)(
+            self.direction.reshape((1, -1, 1, 1)), self.output[self.layer]
+        ).mean()
         return self.scaler * loss_local
 
 
 class Channel_Interpolate(Common):
+    """Visualization of channel interpolation between
+    2 different channels. Can be from different layers
+    as well."""
+
     def __init__(self, layer, channel, layer_2, channel_2):
         super().__init__(layer)
         self.channel = channel
@@ -165,26 +185,27 @@ class Channel_Interpolate(Common):
 
 class WRT_Classes(Common):
     """This class displays 10 images (thus needs a batched input
-        with a shape of [num_classes, 3, H, W]) adding the logits of the
-        diagonal of the [num_classes, num_classes] output tensor (i.e.
-        the fc linear layer).
+    with a shape of [num_classes, 3, H, W]) adding the logits of the
+    diagonal of the [num_classes, num_classes] output tensor (i.e.
+    the fc linear layer).
 
-        Output is 10 images, each maximizing the specified channel and
-        one of the available output classes, since the logits of that class
-        are to be maximized to induce a greater loss.
+    Output is 10 images, each maximizing the specified channel and
+    one of the available output classes, since the logits of that class
+    are to be maximized to induce a greater loss.
 
-        The loop advances sum_loss accessing the channel tensor for batch
-        number n (the first image is indexed as batch_num=0)
-        and adding the diagonal element corresponding to each class.
-        By doing so, the upper leftmost element of the fc layer's output (0,0)
-        referring to the logit of the first class of the classification task is
-        added to the first image of the batch (the value of which has already
-        been reduced to a scalar).
+    The loop advances sum_loss accessing the channel tensor for batch
+    number n (the first image is indexed as batch_num=0)
+    and adding the diagonal element corresponding to each class.
+    By doing so, the upper leftmost element of the fc layer's output (0,0)
+    referring to the logit of the first class of the classification task is
+    added to the first image of the batch (the value of which has already
+    been reduced to a scalar).
 
-        1.5e-3 seems to yield the most legible results, since the logits need
-        to be scaled, otherwise they overrule the visualization, obfuscating
-        any other objective.
-        """
+    1.5e-3 seems to yield the most legible results, since the logits need
+    to be scaled, otherwise they overrule the visualization, obfuscating
+    any other objective.
+    """
+
     def __init__(self, layer, channel, model):
         super().__init__(layer)
         self.channel = channel
@@ -195,15 +216,21 @@ class WRT_Classes(Common):
     def __call__(self) -> torch.Tensor:
         if self.output[self.layer] is None or self.output[self.layer_2] is None:
             exit("Object callable only after forward pass!")
-        # batch_number = list(self.output[self.layer].shape)[0]  # must always be 10
+        # batch_number = list(self.output[self.layer].shape)[0]
         channel_tensor = self.output[self.layer][:, self.channel]
         sum_loss = torch.zeros(1).to(device)
         for n in range(self.classes_num):
-            sum_loss -= channel_tensor[n].mean() + (1.5e-3 * self.output[self.layer_2][n, n])
+            sum_loss -= channel_tensor[n].mean() + (
+                1.5e-3 * self.output[self.layer_2][n, n]
+            )
         return self.scaler * sum_loss
 
 
 class Diversity_Obj(Common):
+    """Implement diversity visualization to observe
+    different facets of the same features that
+    activate the unit."""
+
     def __init__(self, layer, channel) -> None:
         super().__init__(layer)
         self.channel = channel
@@ -217,10 +244,18 @@ class Diversity_Obj(Common):
         flattened = self.output[self.layer].view(batch, channels, -1)
         grams = torch.matmul(flattened, torch.transpose(flattened, 1, 2))
         grams = F.normalize(grams, p=2, dim=(1, 2), eps=1e-10)
-        loss_local = - channel_tensor.mean()
-        return loss_local - self.scaler * (-sum([sum([torch.sum(grams[i]*grams[j])
-                                                     for j in range(batch) if j != i])
-                                                for i in range(batch)]) / batch)
+        loss_local = -channel_tensor.mean()
+        return loss_local - self.scaler * (
+            -sum(
+                [
+                    sum(
+                        [torch.sum(grams[i] * grams[j]) for j in range(batch) if j != i]
+                    )
+                    for i in range(batch)
+                ]
+            )
+            / batch
+        )
 
 
 # class Diversity_Obj_2(Common):
