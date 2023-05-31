@@ -11,19 +11,22 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 class Cancels:
+    """Handles all abort operations."""
     def __init__(self, dict_type: dict) -> None:
         self.ren_inst_dict = dict_type
-        print("Been through __init__")
-        # del self.ren_inst_dict[name]
-        print(self.ren_inst_dict)
 
-    def abort_other_ops(self):
+    def abort_all_ops(self):
+        """Sequentially changes the abort flag of
+            all render class instances."""
+        print("Operations Aborted!")
         for instance in self.ren_inst_dict.values():
-            print("Been through abort other ops")
             instance.abort_operation()
 
 
 def check_if_cnn(listed_models):
+    """Removes all vision transformers from the
+        list of available models. Rendering does not
+        work with them."""
     cnn_list = []
     for name in listed_models:
         if "vit" in name or "swin" in name:
@@ -70,14 +73,14 @@ def main():
         model_selection = gr.Radio(
             choices=model_list, label="Available Torchvision Models"
         )
-        activation_func = gr.Button(value="Enforce Leaky ReLU",
-                                    visible=True)
-        model_selection.change(fn=show_act_f_change,
-                               inputs=[model_selection],
-                               outputs=[activation_func])
-        upload = gr.UploadButton(label="Upload appropriate .pth file.",
-                                 file_types=["pth"],
-                                 file_count="single"
+        activation_func = gr.Button(value="Enforce Leaky ReLU", visible=True)
+        model_selection.change(
+            fn=show_act_f_change, inputs=[model_selection], outputs=[activation_func]
+        )
+        upload = gr.UploadButton(
+            label="Upload appropriate .pth file.",
+            file_types=["pth"],
+            file_count="single",
         )
         list_of_objectives = [
             "DeepDream",
@@ -88,19 +91,20 @@ def main():
             "Diversity",
         ]
         # Make dictionaries of I/O and Buttons to have seperate calls to
-        # functions class objects. Will make it much easier to retain
-        # information.
+        # functions of class instances. Will make it much easier to retain
+        # and modify information outside of gradio components.
         inputs = {}
         output = {}
         buttons = {}
         render_instances = {}
-        tabs_dict = {}
+        tabs = {}
         with gr.Tabs():
             for objective_type in list_of_objectives:
-                with gr.Tab(objective_type) as tabs_dict[objective_type]:
-                    # Initialize Render_Class instances.
+                with gr.Tab(objective_type) as tabs[objective_type]:
+                    # Initialize Render_Class instance for each tab.
                     render_instances[objective_type] = Render_Class()
-                    print(objective_type, render_instances[objective_type])
+                    print(f"Initializing Instance for {objective_type} Visualization Objective")
+                    # print(objective_type, render_instances[objective_type])
                     type = gr.Markdown(
                         objective_type, visible=False
                     )  # jankiest of solutions but alas...
@@ -141,8 +145,7 @@ def main():
                         or objective_type == list_of_objectives[4]
                     ):
                         layer_selection_2 = gr.Radio(choices=[],
-                                                     label="Second layer"
-                                                     )
+                                                     label="Second layer")
                         channel_selection = gr.Slider(
                             0, 511, step=1, label="Channel Number"
                         )
@@ -163,7 +166,8 @@ def main():
                             )
                         else:
                             operator = gr.Radio(
-                                choices=[], label="Available Operators",
+                                choices=[],
+                                label="Available Operators",
                                 visible=False
                             )
                         inputs[objective_type] = [
@@ -224,7 +228,7 @@ def main():
                             threshold,
                             image_shape,
                         ]
-                    # CHANGES AND BUTTONS
+                    # CHANGES AND BUTTONS ------------------------------
                     model_selection.change(
                         fn=render_instances[objective_type].available_layers,
                         inputs=model_selection,
@@ -245,7 +249,7 @@ def main():
                         inputs=[upload],
                         outputs=None,
                     )
-                    # Make Buttons
+                    # Make Buttons ---------------------------------------
                     buttons[objective_type] = gr.Button("Create")
                     output[objective_type] = gr.Image().style(height=224)
                     # Start Button trigger
@@ -262,17 +266,22 @@ def main():
                         outputs=None,
                         cancels=[start],
                     )
-        
+        # Each time a user selects a different tab, all previous operations
+        # cancel as a means of controlling available cuda or system memory.
+        # Unfortunately, rendering on multiple tabs is a very taxing operation.
         for objective_type in list_of_objectives:
+            # Make object in order to pass the render_instances dictionary
             cancel_ops = Cancels(render_instances)
-            # cancel_others_dict[objective_type].remove_and_return()
-            tabs_dict[objective_type].select(fn=cancel_ops.abort_other_ops,
-                                             inputs=None,
-                                             outputs=None,
-                                             cancels=None)
-    # Set concurency N=number of objective tabs (limit
-    # to 2 or 3 if GPU memory =< 4Gb)
+            # Create actions for each Tab's selection.
+            tabs[objective_type].select(
+                fn=cancel_ops.abort_all_ops,
+                inputs=None,
+                outputs=None,
+                cancels=None
+            )
+    # Set concurency N=number of objective tabs
     # Set size n=number changes needed
+    print("Starting server...")
     demo.queue(concurrency_count=6, max_size=10).launch()
 
 

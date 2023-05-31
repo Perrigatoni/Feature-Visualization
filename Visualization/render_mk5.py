@@ -165,7 +165,7 @@ class Render_Class:
         """Aborts render operation if needed."""
         self.flag = True
 
-    def handle_act_func(self, act_func):
+    def handle_act_func(self):
         """Handles the change of activation function to Leaky ReLU.
         Leaky ReLU behaves a bit better when trying to
         visualize features.
