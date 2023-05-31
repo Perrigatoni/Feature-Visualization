@@ -10,6 +10,19 @@ from torchvision.models import list_models
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
+class Cancels:
+    def __init__(self, dict_type: dict) -> None:
+        self.ren_inst_dict = dict_type
+        print("Been through __init__")
+        # del self.ren_inst_dict[name]
+        print(self.ren_inst_dict)
+
+    def abort_other_ops(self):
+        for instance in self.ren_inst_dict.values():
+            print("Been through abort other ops")
+            instance.abort_operation()
+
+
 def check_if_cnn(listed_models):
     cnn_list = []
     for name in listed_models:
@@ -18,6 +31,18 @@ def check_if_cnn(listed_models):
         else:
             cnn_list.append(name)
     return cnn_list
+
+
+def show_act_f_change(model_name):
+    """Makes user unable to select option Leaky ReLU
+    if model is googlenet, since it has no named module
+    for ReLU."""
+    if model_name.strip("<p>\n/").lower() == "googlenet":
+        return gr.Button.update(visible=False)
+    elif model_name.strip("<p>\n/").lower() == "inception_v3":
+        return gr.Button.update(visible=False)
+    else:
+        return gr.Button.update(visible=True)
 
 
 def main():
@@ -45,11 +70,11 @@ def main():
         model_selection = gr.Radio(
             choices=model_list, label="Available Torchvision Models"
         )
-        activation_func = gr.Radio(
-            choices=["ReLU", "Leaky ReLU"],
-            label="Select Leaky ReLU if visualization appears empty.",
-        )
-
+        activation_func = gr.Button(value="Enforce Leaky ReLU",
+                                    visible=True)
+        model_selection.change(fn=show_act_f_change,
+                               inputs=[model_selection],
+                               outputs=[activation_func])
         upload = gr.UploadButton(label="Upload appropriate .pth file.",
                                  file_types=["pth"],
                                  file_count="single"
@@ -69,9 +94,10 @@ def main():
         output = {}
         buttons = {}
         render_instances = {}
+        tabs_dict = {}
         with gr.Tabs():
             for objective_type in list_of_objectives:
-                with gr.Tab(objective_type) as tab:
+                with gr.Tab(objective_type) as tabs_dict[objective_type]:
                     # Initialize Render_Class instances.
                     render_instances[objective_type] = Render_Class()
                     print(objective_type, render_instances[objective_type])
@@ -204,9 +230,9 @@ def main():
                         inputs=model_selection,
                         outputs=layer_selection,
                     )
-                    activation_func.change(
+                    activation_func.click(
                         fn=render_instances[objective_type].handle_act_func,
-                        inputs=activation_func,
+                        inputs=None,
                         outputs=None,
                     )
                     layer_selection.change(
@@ -236,6 +262,14 @@ def main():
                         outputs=None,
                         cancels=[start],
                     )
+        
+        for objective_type in list_of_objectives:
+            cancel_ops = Cancels(render_instances)
+            # cancel_others_dict[objective_type].remove_and_return()
+            tabs_dict[objective_type].select(fn=cancel_ops.abort_other_ops,
+                                             inputs=None,
+                                             outputs=None,
+                                             cancels=None)
     # Set concurency N=number of objective tabs (limit
     # to 2 or 3 if GPU memory =< 4Gb)
     # Set size n=number changes needed

@@ -110,7 +110,7 @@ def get_out_classes(dict1, dict2):
     """
     if dict1.keys() != dict2.keys():
         raise ValueError("Incompatible state dict and model!\
-        Unable to load weights.")
+    Unable to load weights.")
     else:
         print("Compatible State Dicts! Checking Classifier shape...")
         classifier_t = list(dict1.values())[-1]
@@ -120,7 +120,7 @@ def get_out_classes(dict1, dict2):
 
 class Render_Class:
     def __init__(self) -> None:
-        self.abort_flag = False
+        self.flag = False
         self.model = None
         self.change_act_func = False
         self.module_dict = {}
@@ -141,7 +141,6 @@ class Render_Class:
             )
 
     def state_dict_upload(self, pth_file):
-        # if os.path.exists(pth_file.strip("\"\"")):
         self.file_path = pth_file.name
         state_dict = torch.load(self.file_path,
                                 map_location=torch.device("cpu"))
@@ -153,11 +152,6 @@ class Render_Class:
         self.module_dict = module_fill(self.model)
         print(self.model)
         self.model.load_state_dict(torch.load(self.file_path))
-        # else:
-            # self.model = get_model(
-            #     self.model_name.strip("<p>\n/").lower(), weights="DEFAULT"
-            # )
-            # self.module_dict = module_fill(self.model)
 
     def update_sliders(self, layer_name):
         """Update channel sliders' maximum cap."""
@@ -169,16 +163,14 @@ class Render_Class:
 
     def abort_operation(self):
         """Aborts render operation if needed."""
-        self.abort_flag = True
+        self.flag = True
 
     def handle_act_func(self, act_func):
         """Handles the change of activation function to Leaky ReLU.
         Leaky ReLU behaves a bit better when trying to
         visualize features.
         """
-        act_func = act_func.strip("<p>\n/")
-        self.change_act_func = True if "Leaky" in act_func else False
-        # print(self.change_act_func)
+        self.change_act_func = True
 
     def render(
         self,
@@ -222,7 +214,8 @@ class Render_Class:
         Return:
             PIL.Image
         """
-        self.abort_flag = False
+        torch.cuda.empty_cache()
+        self.flag = False
         self.model.to(device).eval()
         # Hyper Parameters
         threshold = threshold or 256
@@ -236,9 +229,12 @@ class Render_Class:
 
         # Conversion of ReLU activation function to LeakyReLU.
         if self.change_act_func:
-            module_convertor(self.model, nn.ReLU, nn.LeakyReLU(inplace=True))
-        # module_dict = module_fill(self.model)
-
+            if self.model_name.strip("<p>\n/").lower() == "googlenet":
+                pass
+            else:
+                module_convertor(self.model,
+                                 nn.ReLU,
+                                 nn.LeakyReLU(inplace=True))
         # Create image object ( image to parameterize, starting from noise)
         if parameterization == "pixel":
             image_object = image_classes.Pixel_Image(shape=shape)
@@ -293,7 +289,10 @@ class Render_Class:
                 return loss
 
             optimizer.step(closure)
-            if self.abort_flag:
+            if self.flag:
+                self.flag = False
+                del image_object
+                torch.cuda.empty_cache()
                 return None  # display_out(image_object())
         # Display final image after optimization
         return display_out(image_object())
