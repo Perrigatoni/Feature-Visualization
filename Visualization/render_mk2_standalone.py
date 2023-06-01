@@ -14,7 +14,7 @@ from tqdm import tqdm
 import image_classes
 import transformations
 
-from objective_classes_mk2 import *
+from objective_classes import *
 # from scratch_tiny_resnet import ResNetX, ResNet10
 
 

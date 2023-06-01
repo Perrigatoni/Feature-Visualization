@@ -12,7 +12,7 @@ from torchvision.models import list_models, get_model
 import image_classes
 import transformations
 
-from objective_classes_mk2 import *  # analysis:ignore
+from objective_classes import *
 
 # Execute utilizing GPU if available
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -67,19 +67,19 @@ def module_convertor(model, module_type_pre, module_type_post):
 
 
 def module_fill(model):
-    """Use this method to create dictionary of all available
-    CNN Conv2d and Linear layers. Commonly used to gain
-    access to naming schemes of different layers in or out of
-    Sequential containers. Would advise to always let this
-    method fill the respective dictionary so as to reference
-    model layers later on when visualizing features.
+    """Use this method to create dictionary of all available 
+        CNN Conv2d and Linear layers. Commonly used to gain
+        access to naming schemes of different layers in or out of
+        Sequential containers. Would advise to always let this
+        method fill the respective dictionary so as to reference
+        model layers later on when visualizing features.
 
-    Args:
-        model: nn.Module (the model class to use)
-    Returns:
-        module_dict: dict (dictionary with named conv
-                            and linear modules)
-    """
+        Args:
+            model: nn.Module (the model class to use)
+        Returns:
+            module_dict: dict (dictionary with named conv
+                                and linear modules)
+        """
     module_dict = {}
     for name, mod in model.named_modules():
         if len(list(mod.children())) == 0:
@@ -92,45 +92,18 @@ def module_fill(model):
     return module_dict
 
 
-def get_out_classes(dict1, dict2):
-    """Compare two state dicts to find if parameters keys
-    match between the two.
-
-    Meant to be used when trying to load a new state
-    dict to a torchvision model.
-    Cannot ensure compatibility with scratch made
-    models yet.
-
-    Args:
-        dict1, dict2: OrderedDict (The state dicts to compare)
-    Returns:
-        Number of Output classes. (Used to reshape the FC
-                                   classifier in the end of
-                                   a CNN.)
-    """
-    if dict1.keys() != dict2.keys():
-        raise ValueError("Incompatible state dict and model!\
-    Unable to load weights.")
-    else:
-        print("Compatible State Dicts! Checking Classifier shape...")
-        classifier_t = list(dict1.values())[-1]
-        print(classifier_t.shape)
-        return classifier_t.shape[0]
-
-
 class Render_Class:
     def __init__(self) -> None:
-        self.flag = False
+        self.abort_flag = False
         self.model = None
         self.change_act_func = False
         self.module_dict = {}
 
     def available_layers(self, model_name):
         """Set model and fill dict with all available conv and linear
-        layers.
-        """
-        self.model_name = model_name
-        if self.model_name in list_models():
+            layers.
+            """
+        if model_name in list_models():
             self.model = get_model(
                 model_name.strip("<p>\n/").lower(), weights="DEFAULT"
             )
@@ -141,17 +114,7 @@ class Render_Class:
             )
 
     def state_dict_upload(self, pth_file):
-        self.file_path = pth_file.name
-        state_dict = torch.load(self.file_path,
-                                map_location=torch.device("cpu"))
-        dataset_out_classes = get_out_classes(state_dict,
-                                              self.model.state_dict())
-        classifier_name = list(self.module_dict)[-1]
-        classifier = getattr(self.model, classifier_name)
-        classifier.out_features = dataset_out_classes
-        self.module_dict = module_fill(self.model)
-        print(self.model)
-        self.model.load_state_dict(torch.load(self.file_path))
+        self.file_name = pth_file.name
 
     def update_sliders(self, layer_name):
         """Update channel sliders' maximum cap."""
@@ -163,14 +126,16 @@ class Render_Class:
 
     def abort_operation(self):
         """Aborts render operation if needed."""
-        self.flag = True
+        self.abort_flag = True
 
-    def handle_act_func(self):
+    def handle_act_func(self, act_func):
         """Handles the change of activation function to Leaky ReLU.
-        Leaky ReLU behaves a bit better when trying to
-        visualize features.
+
+            Leaky ReLU behaves a bit better when trying to visualize features.
         """
-        self.change_act_func = True
+        act_func = act_func.strip("<p>\n/")
+        self.change_act_func = True if "Leaky" in act_func else False
+        # print(self.change_act_func)
 
     def render(
         self,
@@ -197,7 +162,7 @@ class Render_Class:
         gradio interface, hence all arguments are strings and integers.
 
         See the standalone render script if you want to experiment
-        with backend operations and precise mixing or directory
+        with backend operations and precise mixing or directory 
         creation.
 
         Args:
@@ -214,8 +179,7 @@ class Render_Class:
         Return:
             PIL.Image
         """
-        torch.cuda.empty_cache()
-        self.flag = False
+        self.abort_flag = False
         self.model.to(device).eval()
         # Hyper Parameters
         threshold = threshold or 256
@@ -229,12 +193,9 @@ class Render_Class:
 
         # Conversion of ReLU activation function to LeakyReLU.
         if self.change_act_func:
-            if self.model_name.strip("<p>\n/").lower() == "googlenet":
-                pass
-            else:
-                module_convertor(self.model,
-                                 nn.ReLU,
-                                 nn.LeakyReLU(inplace=True))
+            module_convertor(self.model, nn.ReLU, nn.LeakyReLU(inplace=True))
+        # module_dict = module_fill(self.model)
+
         # Create image object ( image to parameterize, starting from noise)
         if parameterization == "pixel":
             image_object = image_classes.Pixel_Image(shape=shape)
@@ -289,10 +250,7 @@ class Render_Class:
                 return loss
 
             optimizer.step(closure)
-            if self.flag:
-                self.flag = False
-                del image_object
-                torch.cuda.empty_cache()
+            if self.abort_flag:
                 return None  # display_out(image_object())
         # Display final image after optimization
         return display_out(image_object())

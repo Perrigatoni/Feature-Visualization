@@ -11,7 +11,7 @@ from PIL import Image
 import image_classes
 import transformations
 
-from objective_classes_mk2 import *
+from objective_classes import *
 
 # Execute utilizing GPU if available
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

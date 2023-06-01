@@ -9,7 +9,8 @@
 import torch
 import torch.nn as nn
 # from torchvision.models import resnet18
-device  = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 
 class block_tiny(nn.Module):
     """This is the basic building block utilized by all

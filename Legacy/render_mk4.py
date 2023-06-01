@@ -12,7 +12,7 @@ from torchvision.models import list_models, get_model
 import image_classes
 import transformations
 
-from objective_classes_mk2 import *  # analysis:ignore
+from objective_classes import *  # analysis:ignore
 
 # Execute utilizing GPU if available
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
