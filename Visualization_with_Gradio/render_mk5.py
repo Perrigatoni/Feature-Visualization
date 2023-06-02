@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 
 from PIL import Image
-from torchvision.models import list_models, get_model
+from torchvision.models import list_models, get_model, resnet18
 
 import image_classes
 import transformations
@@ -46,6 +46,9 @@ def save_image(tensor: torch.Tensor, path: str, name: str) -> None:
         image = np.concatenate(image, axis=1)
     if os.path.exists(path) is False:
         os.mkdir(path)
+    print(f"Saving visualization {name} in {path}")
+    if ".jpg" not in name:
+        name = name + ".jpg"
     Image.fromarray(image).save(path + name)
 
 
@@ -109,12 +112,11 @@ def get_out_classes(dict1, dict2):
                                    a CNN.)
     """
     if dict1.keys() != dict2.keys():
-        raise ValueError("Incompatible state dict and model!\
-    Unable to load weights.")
+        raise ValueError("Incompatible state dict and model! Unable to load weights.")
     else:
         print("Compatible State Dicts! Checking Classifier shape...")
         classifier_t = list(dict1.values())[-1]
-        print(classifier_t.shape)
+        # print(classifier_t.shape)
         return classifier_t.shape[0]
 
 
@@ -123,6 +125,7 @@ class Render_Class:
         self.flag = False
         self.model = None
         self.change_act_func = False
+        self.keep = False
         self.module_dict = {}
 
     def available_layers(self, model_name):
@@ -141,16 +144,22 @@ class Render_Class:
             )
 
     def state_dict_upload(self, pth_file):
+        """Updates the state dict of a given model, if
+        compatible. Implemented custom parameter uploading
+        through this function.
+        """
         self.file_path = pth_file.name
-        state_dict = torch.load(self.file_path,
-                                map_location=torch.device("cpu"))
-        dataset_out_classes = get_out_classes(state_dict,
-                                              self.model.state_dict())
+        state_dict = torch.load(self.file_path, map_location=torch.device("cpu"))
+        # Get amount of output classes from the state_dict
+        # being loaded to check for compatibility.
+        dataset_out_classes = get_out_classes(state_dict, self.model.state_dict())
         classifier_name = list(self.module_dict)[-1]
+        # Pass classifier attribute to variable
+        # for reshaping.
         classifier = getattr(self.model, classifier_name)
         classifier.out_features = dataset_out_classes
         self.module_dict = module_fill(self.model)
-        print(self.model)
+        # print(self.model)
         self.model.load_state_dict(torch.load(self.file_path))
 
     def update_sliders(self, layer_name):
@@ -164,6 +173,19 @@ class Render_Class:
     def abort_operation(self):
         """Aborts render operation if needed."""
         self.flag = True
+
+    def save_output(self, choice):
+        """Specifies whether saving function is called."""
+        if choice.strip("<p>\n/") == "Yes":
+            self.keep = True
+        else:
+            self.keep = False
+
+    def where_to_save(self, path):
+        self.path = path
+
+    def how_to_name(self, name):
+        self.vis_output_name = name
 
     def handle_act_func(self):
         """Handles the change of activation function to Leaky ReLU.
@@ -232,9 +254,7 @@ class Render_Class:
             if self.model_name.strip("<p>\n/").lower() == "googlenet":
                 pass
             else:
-                module_convertor(self.model,
-                                 nn.ReLU,
-                                 nn.LeakyReLU(inplace=True))
+                module_convertor(self.model, nn.ReLU, nn.LeakyReLU(inplace=True))
         # Create image object ( image to parameterize, starting from noise)
         if parameterization == "pixel":
             image_object = image_classes.Pixel_Image(shape=shape)
@@ -295,4 +315,6 @@ class Render_Class:
                 torch.cuda.empty_cache()
                 return None  # display_out(image_object())
         # Display final image after optimization
+        if self.keep:
+            save_image(image_object(), path=self.path, name=self.vis_output_name)
         return display_out(image_object())
