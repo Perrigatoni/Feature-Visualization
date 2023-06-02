@@ -12,12 +12,13 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class Cancels:
     """Handles all abort operations."""
+
     def __init__(self, dict_type: dict) -> None:
         self.ren_inst_dict = dict_type
 
     def abort_all_ops(self):
         """Sequentially changes the abort flag of
-            all render class instances."""
+        all render class instances."""
         print("Operations Aborted!")
         for instance in self.ren_inst_dict.values():
             instance.abort_operation()
@@ -25,8 +26,8 @@ class Cancels:
 
 def check_if_cnn(listed_models):
     """Removes all vision transformers from the
-        list of available models. Rendering does not
-        work with them."""
+    list of available models. Rendering does not
+    work with them."""
     cnn_list = []
     for name in listed_models:
         if "vit" in name or "swin" in name:
@@ -46,6 +47,13 @@ def show_act_f_change(model_name):
         return gr.Button.update(visible=False)
     else:
         return gr.Button.update(visible=True)
+
+
+def show_saving_fields(choice):
+    if choice.strip("<p>\n/").lower() == "yes":
+        return [gr.Textbox.update(visible=True), gr.Textbox.update(visible=True)]
+    else:
+        return [gr.Textbox.update(visible=False), gr.Textbox.update(visible=False)]
 
 
 def main():
@@ -77,6 +85,7 @@ def main():
         model_selection.change(
             fn=show_act_f_change, inputs=[model_selection], outputs=[activation_func]
         )
+
         upload = gr.UploadButton(
             label="Upload appropriate .pth file.",
             file_types=["pth"],
@@ -95,7 +104,7 @@ def main():
         # and modify information outside of gradio components.
         inputs = {}
         output = {}
-        buttons = {}
+        start_buttons = {}
         render_instances = {}
         tabs = {}
         with gr.Tabs():
@@ -103,15 +112,24 @@ def main():
                 with gr.Tab(objective_type) as tabs[objective_type]:
                     # Initialize Render_Class instance for each tab.
                     render_instances[objective_type] = Render_Class()
-                    print(f"Initializing Instance for {objective_type} Visualization Objective")
+                    print(
+                        f"Initializing Instance for {objective_type} Visualization Objective"
+                    )
                     # print(objective_type, render_instances[objective_type])
                     type = gr.Markdown(
                         objective_type, visible=False
                     )  # jankiest of solutions but alas...
                     parameterization = gr.Radio(
-                        choices=["fft", "pixel"],
-                        value="fft",
-                        label="Parameterization"
+                        choices=["fft", "pixel"], value="fft", label="Parameterization"
+                    )
+                    retain = gr.Radio(
+                        choices=["Yes", "No"], value="No", label="Save rendered output?"
+                    )
+                    saving_path = gr.Textbox(
+                        label="Input absolute save path", visible=False
+                    )
+                    naming_scheme = gr.Textbox(
+                        label="Input desired file name", visible=False
                     )
                     threshold = gr.Slider(
                         0, 1024, step=16, label="Number of Iterations"
@@ -144,8 +162,7 @@ def main():
                         objective_type == list_of_objectives[3]
                         or objective_type == list_of_objectives[4]
                     ):
-                        layer_selection_2 = gr.Radio(choices=[],
-                                                     label="Second layer")
+                        layer_selection_2 = gr.Radio(choices=[], label="Second layer")
                         channel_selection = gr.Slider(
                             0, 511, step=1, label="Channel Number"
                         )
@@ -166,9 +183,7 @@ def main():
                             )
                         else:
                             operator = gr.Radio(
-                                choices=[],
-                                label="Available Operators",
-                                visible=False
+                                choices=[], label="Available Operators", visible=False
                             )
                         inputs[objective_type] = [
                             type,
@@ -195,9 +210,7 @@ def main():
                             4, 10, step=2, label="Images to Produce"
                         )
                         operator = gr.Radio(
-                            choices=[],
-                            label="Available Operators",
-                            visible=False
+                            choices=[], label="Available Operators", visible=False
                         )
                         inputs[objective_type] = [
                             type,
@@ -215,9 +228,7 @@ def main():
                         )
                         image_shape = gr.Number(1, precision=0, visible=False)
                         operator = gr.Radio(
-                            choices=[],
-                            label="Available Operators",
-                            visible=False
+                            choices=[], label="Available Operators", visible=False
                         )
                         inputs[objective_type] = [
                             type,
@@ -249,11 +260,31 @@ def main():
                         inputs=[upload],
                         outputs=None,
                     )
+                    retain.change(
+                        fn=render_instances[objective_type].save_output,
+                        inputs=[retain],
+                        outputs=None,
+                    )
+                    retain.change(
+                        fn=show_saving_fields,
+                        inputs=[retain],
+                        outputs=[saving_path, naming_scheme],
+                    )
+                    saving_path.submit(
+                        fn=render_instances[objective_type].where_to_save,
+                        inputs=[saving_path],
+                        outputs=None,
+                    )
+                    naming_scheme.submit(
+                        fn=render_instances[objective_type].how_to_name,
+                        inputs=[naming_scheme],
+                        outputs=None,
+                    )
                     # Make Buttons ---------------------------------------
-                    buttons[objective_type] = gr.Button("Create")
+                    start_buttons[objective_type] = gr.Button("Create")
                     output[objective_type] = gr.Image().style(height=224)
                     # Start Button trigger
-                    start = buttons[objective_type].click(
+                    start = start_buttons[objective_type].click(
                         render_instances[objective_type].render,
                         inputs[objective_type],
                         output[objective_type],
