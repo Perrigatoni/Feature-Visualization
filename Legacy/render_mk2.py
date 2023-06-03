@@ -9,11 +9,8 @@ import torch.nn as nn
 from torchvision import models
 from PIL import Image
 
-import image_classes
-import transformations
-
-
-from objective_classes import *
+from Visualization_with_Gradio import image_classes, transformations
+from Visualization_with_Gradio.objective_classes import *
 
 # Execute utilizing GPU if available
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
