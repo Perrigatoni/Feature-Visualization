@@ -11,10 +11,9 @@ from PIL import Image
 from torchvision import models
 from tqdm import tqdm
 
-import image_classes
-import transformations
+from Visualization_with_Gradio import image_classes, transformations
 
-from objective_classes import *
+from Visualization_with_Gradio.objective_classes import *
 # from scratch_tiny_resnet import ResNetX, ResNet10
 
 

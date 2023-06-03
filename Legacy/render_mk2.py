@@ -6,147 +6,136 @@ import gradio as gr
 import torch
 import torch.nn as nn
 
+from torchvision import models
 from PIL import Image
 
 import image_classes
 import transformations
+
 
 from objective_classes import *
 
 # Execute utilizing GPU if available
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+model = models.resnet18(weights="DEFAULT")
+model.to(device).eval()
 
-class Render_Class():
-    def __init__(self, model, change_act_func) -> None:
-        self.flag = False
-        self.model = model
-        self.change_act_func = change_act_func
 
-    def set_flag(self):
-        self.flag = True
+def render(
+    type,
+    operator,
+    layer,
+    channel,
+    param,
+    threshold,
+    image_shape,
+    layer2=None,
+    channel2=None,
+    progress=gr.Progress(),
+):
+    """Customizable method creating visualizations based on
+    specified objectives and parameters.
 
-    def render(self,
-               type,
-               operator,
-               layer,
-               channel,
-               param,
-               threshold,
-               image_shape,
-               layer2=None,
-               channel2=None,
-               progress=gr.Progress()
-               ):
-        """Customizable method creating visualizations based on
-            specified objectives and parameters.
+    Utilizes case matching for each type of objective in
+    'objective_classes' and performs gradient ascend based
+    on input parameters.
 
-            Utilizes case matching for each type of objective in
-            'objective_classes' and performs gradient ascend based
-            on input parameters.
+    Is usually called through 'Interaction_Handling.py',
+    implementing gradio interface on localhost.
 
-            Is usually called through 'Interaction_Handling.py',
-            implementing gradio interface on localhost.
+    Args:
+        type: str,
+        operator: str,
+        layer: str,
+        channel: int,
+        param: str (e.g. 'fft'),
+        image_shape: int (batch dimension),
+        layer2: str,
+        channel2: int
 
-            Args:
-                type: str,
-                operator: str,
-                layer: str,
-                channel: int,
-                param: str (e.g. 'fft'),
-                image_shape: int (batch dimension),
-                layer2: str,
-                channel2: int
+    Return:
+        PIL.Image
+    """
+    module_dict = module_fill(model)
+    # Hyper Parameters
+    threshold = threshold or 256
+    parameterization = param or "fft"
+    # Initializing the shape.
+    if type.strip("<p>\n/") == "Diversity":
+        shape = [image_shape, 3, 128, 128]
+    else:
+        shape = [image_shape, 3, 224, 224]
+    multiple_objectives = False
 
-            Return:
-                PIL.Image
-        """
-        self.flag = False
-        # Hyper Parameters
-        threshold = threshold or 256
-        parameterization = param or 'fft'
-        # Initializing the shape.
-        if type.strip('<p>\n/') == 'Diversity':
-            shape = [image_shape, 3, 128, 128]
-        else:
-            shape = [image_shape, 3, 224, 224]
-        multiple_objectives = False
+    # Create image object ( image to parameterize, starting from noise)
+    if parameterization == "pixel":
+        image_object = image_classes.Pixel_Image(shape=shape)
+        parameter = [image_object.parameter]
+    elif parameterization == "fft":
+        image_object = image_classes.FFT_Image(shape=shape)
+        parameter = [image_object.spectrum_random_noise]
+    else:
+        exit(
+            "Unsupported initial image, please select parameterization \
+            options: 'pixel' or 'fft'!"
+        )
 
-        # Conversion of ReLU activation function to LeakyReLU.
-        if self.change_act_func:
-            module_convertor(self.model, nn.ReLU, nn.LeakyReLU(inplace=True))
-        module_dict = module_fill(self.model)
+    # Define optimizer and pass the parameters to optimize
+    optimizer = torch.optim.Adam(parameter, lr=0.05)
 
-        # Create image object ( image to parameterize, starting from noise)
-        if parameterization == "pixel":
-            image_object = image_classes.Pixel_Image(shape=shape)
-            parameter = [image_object.parameter]
-        elif parameterization == "fft":
-            image_object = image_classes.FFT_Image(shape=shape)
-            parameter = [image_object.spectrum_random_noise]
-        else:
-            exit("Unsupported initial image, please select parameterization \
-                options: 'pixel' or 'fft'!")
+    match type.strip("<p>\n/"):
+        case "DeepDream":
+            objective = DeepDream_Obj(module_dict[layer])
+        case "Channel":
+            objective = Channel_Obj(module_dict[layer], channel)
+        case "Neuron":
+            objective = Neuron_Obj(module_dict[layer], channel)
+        case "Interpolation":
+            objective = Channel_Interpolate(
+                module_dict[layer], channel, module_dict[layer2], channel2
+            )
+        case "Joint":
+            objective = Channel_Obj(module_dict[layer], channel)
+            secondary_obj = Channel_Obj(module_dict[layer2], channel2)
+            multiple_objectives = True
+        case "Diversity":
+            objective = 1e-2 * Diversity_Obj(module_dict[layer], channel)
+        case "Channel Weight":
+            objective = Channel_Weight(
+                module_dict[layer],
+                weight=torch.rand(module_dict[layer].out_channels, device=device),
+            )
+        case "Direction":
+            objective = Direction(
+                module_dict[layer],
+                direction=torch.rand(module_dict[layer].out_channels, device=device),
+            )
+        case "WRT Classes":
+            objective = WRT_Classes(module_dict[layer], channel, model)
+        case _:
+            exit("No valid objective was selected from objective list.")
 
-        # Define optimizer and pass the parameters to optimize
-        optimizer = torch.optim.Adam(parameter, lr=0.05)
+    for _ in progress.tqdm(range(0, threshold), total=threshold):
 
-        match type.strip('<p>\n/'):
-            case 'DeepDream':
-                objective = DeepDream_Obj(module_dict[layer])
-            case 'Channel':
-                objective = Channel_Obj(module_dict[layer], channel)
-            case 'Neuron':
-                objective = Neuron_Obj(module_dict[layer], channel)
-            case 'Interpolation':
-                objective = Channel_Interpolate(module_dict[layer],
-                                                channel,
-                                                module_dict[layer2],
-                                                channel2)
-            case 'Joint':
-                objective = Channel_Obj(module_dict[layer], channel)
-                secondary_obj = Channel_Obj(module_dict[layer2], channel2)
-                multiple_objectives = True
-            case 'Diversity':
-                objective = 1e-2 * Diversity_Obj(module_dict[layer], channel)
-            case 'Channel Weight':
-                objective = Channel_Weight(module_dict[layer],
-                                        weight=torch.rand(module_dict[layer].out_channels,
-                                        device=device))
-            case 'Direction':
-                objective = Direction(module_dict[layer],
-                                    direction=torch.rand(module_dict[layer].out_channels,
-                                    device=device))
-            case 'WRT Classes':
-                objective = WRT_Classes(module_dict[layer],
-                                        channel,
-                                        self.model)
-            case _:
-                exit('No valid objective was selected from objective list.')
+        def closure() -> torch.Tensor:
+            optimizer.zero_grad()
+            # Forward pass
+            model(transformations.standard_transforms(image_object()))
+            # self.model(image_object())
+            if multiple_objectives:
+                loss = operation(operator, objective(), secondary_obj())
+                # print(loss)
+            else:
+                loss = operation(operator, objective())
+                # print(loss)
 
-        for _ in progress.tqdm(range(0, threshold), total=threshold):
+            loss.backward()
+            return loss
 
-            def closure() -> torch.Tensor:
-                optimizer.zero_grad()
-                # Forward pass
-                self.model(transformations.standard_transforms(image_object()))
-                # self.model(image_object())
-                if multiple_objectives:
-                    loss = operation(operator, objective(), secondary_obj())
-                    # print(loss)
-                else:
-                    loss = operation(operator, objective())
-                    # print(loss)
-
-                loss.backward()
-                return loss
-
-            optimizer.step(closure)
-            if self.flag:
-                return None  # display_out(image_object())
-
-        # Display final image after optimization
-        return display_out(image_object())
+        optimizer.step(closure)
+    # Display final image after optimization
+    return display_out(image_object())
 
 
 # Convert Tensor to numpy array.
@@ -185,9 +174,9 @@ def module_convertor(model, module_type_pre, module_type_post):
     conversions_made = 0
     for name, module in model._modules.items():
         if len(list(model.children())) > 0:
-            model._modules[name] = module_convertor(module,
-                                                    module_type_pre,
-                                                    module_type_post)
+            model._modules[name] = module_convertor(
+                module, module_type_pre, module_type_post
+            )
 
         if type(module) == module_type_pre:
             conversions_made += 1

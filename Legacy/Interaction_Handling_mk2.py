@@ -3,9 +3,9 @@ from __future__ import absolute_import, print_function
 import gradio as gr
 import torch
 import torch.nn as nn
-from render_mk2 import Render_Class, module_fill
+from render_mk2 import render, module_fill
 from torchvision import models
-from torchvision.models import get_model, list_models
+
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -24,7 +24,7 @@ class Update_Slider:
 
 def main():
     """Interactive gradio wrapper."""
-    model = models.resnet18(weights='DEFAULT')
+    model = models.resnet18(weights="DEFAULT")
     # in_features = model.fc.in_features
     # # Always reshape the last layer of any imported model to accomodate
     # # dataset classes.
@@ -35,7 +35,7 @@ def main():
     module_dict = module_fill(model)
 
     # Define render object.
-    render = Render_Class(model, change_act_func=False if model.__class__ == "GoogLeNet" else True)
+
     update = Update_Slider(module_dict)
 
     with gr.Blocks() as demo:
@@ -202,17 +202,12 @@ def main():
                     )
                     buttons[objective_type] = gr.Button("Create")
                     output[objective_type] = gr.Image().style(height=224)
-                    start = buttons[objective_type].click(
-                        render.render, inputs[objective_type], output[objective_type]
-                    )
-
-                    stop = gr.Button("Abort")
-                    stop.click(
-                        fn=render.set_flag, inputs=None, outputs=None, cancels=[start]
+                    buttons[objective_type].click(
+                        render, inputs[objective_type], output[objective_type]
                     )
                     # TODO: Check if cancel can interrupt a function execution
 
-    demo.queue(concurrency_count=1, max_size=1).launch()
+    demo.queue(concurrency_count=10, max_size=10).launch(share=True)
 
 
 if __name__ == "__main__":
