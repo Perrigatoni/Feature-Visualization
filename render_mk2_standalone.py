@@ -11,9 +11,9 @@ from PIL import Image
 from torchvision import models
 from tqdm import tqdm
 
-from Visualization_with_Gradio import image_classes, transformations
+from featurevis import image_classes, transformations
 
-from Visualization_with_Gradio.objective_classes import *
+from featurevis.objective_classes import *
 # from scratch_tiny_resnet import ResNetX, ResNet10
 
 
@@ -211,7 +211,7 @@ def main():
             if local_machine_results:
                 save_path = r"C:\Users\Noel\Documents\THESIS"\
                     r"\Outputs_Feature_Visualization"\
-                    rf"\test65outputs\{layer_name.replace(' ', '_')}"
+                    rf"\todelete\{layer_name.replace(' ', '_')}"
             else:
                 save_path = r"/home/perryman1997"\
                     rf"/outputs/test71/{layer_name.replace(' ', '_')}"
