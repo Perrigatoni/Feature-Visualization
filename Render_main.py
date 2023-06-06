@@ -14,6 +14,7 @@ from tqdm import tqdm
 from featurevis import image_classes, transformations
 
 from featurevis.objective_classes import *
+
 # from scratch_tiny_resnet import ResNetX, ResNet10
 
 
@@ -37,9 +38,7 @@ def display_out(tensor: torch.Tensor):
 
 
 # Saving function
-def save_image(tensor: torch.Tensor,
-               path: str,
-               name: str) -> None:
+def save_image(tensor: torch.Tensor, path: str, name: str) -> None:
     """Primary saving function"""
     name = name or "image_temp.jpg"
     image = tensor_to_array(tensor)
@@ -54,22 +53,20 @@ def save_image(tensor: torch.Tensor,
 # Path checking and creation
 def check_path(path: str):
     """Checks if path exists.
-        Will create the specified directories if
-        they don't already exist."""
+    Will create the specified directories if
+    they don't already exist."""
     if os.path.exists(path) is False:
         os.makedirs(path)
 
 
 # This method converts modules into other specified types.
-def module_convertor(model,
-                     module_type_pre,
-                     module_type_post):
+def module_convertor(model, module_type_pre, module_type_post):
     conversions_made = 0
     for name, module in model._modules.items():
         if len(list(model.children())) > 0:
-            model._modules[name] = module_convertor(module,
-                                                    module_type_pre,
-                                                    module_type_post)
+            model._modules[name] = module_convertor(
+                module, module_type_pre, module_type_post
+            )
         if type(module) == module_type_pre:
             conversions_made += 1
             # module_pre = module
@@ -80,23 +77,23 @@ def module_convertor(model,
 
 def module_fill(model):
     """Use this method to create dictionary of all available
-        CNN Conv2d and Linear layers. Commonly used to gain
-        access to naming schemes of different layers in or out of
-        Sequential containers. Would advise to always let this
-        method fill the respective dictionary so as to reference
-        model layers later on when visualizing features.
+    CNN Conv2d and Linear layers. Commonly used to gain
+    access to naming schemes of different layers in or out of
+    Sequential containers. Would advise to always let this
+    method fill the respective dictionary so as to reference
+    model layers later on when visualizing features.
 
-        Args:
-            model: nn.Module (the model class to use)
-        Returns:
-            module_dict: dict (dictionary with named conv
-                                and linear modules)
-        """
+    Args:
+        model: nn.Module (the model class to use)
+    Returns:
+        module_dict: dict (dictionary with named conv
+                            and linear modules)
+    """
     module_dict = {}
     for name, mod in model.named_modules():
         if len(list(mod.children())) == 0:
             if isinstance(mod, nn.Conv2d) or isinstance(mod, nn.Linear):
-                underscored_name = name.replace('.', ' ')
+                underscored_name = name.replace(".", " ")
                 module_dict[underscored_name] = mod
     return module_dict
 
@@ -123,11 +120,11 @@ def main():
     verbose_logs = False
     # Hyper Parameters
     threshold = 1024
-    parameterization = 'fft'
+    parameterization = "fft"
     # Initializing the shape.
     shape = [1, 3, 224, 224]
     multiple_objectives = False  # in case of Mixing objs
-    operator = 'Positive'
+    operator = "Positive"
 
     # Execute utilizing GPU if available
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -141,32 +138,37 @@ def main():
     model.fc = nn.Linear(in_features, 10)
 
     if local_machine_results:
-        model.load_state_dict(torch.load("C://Users//Noel//Documents//THESIS"
-                                         "//Feature Visualization//Weights"
-                                         "//resnet18_torchvision"
-                                         "//test65_epoch598.pth"))
+        model.load_state_dict(
+            torch.load(
+                "C://Users//Noel//Documents//THESIS"
+                "//Feature Visualization//Weights"
+                "//resnet18_torchvision"
+                "//test65_epoch598.pth"
+            )
+        )
     else:
-        model.load_state_dict(torch.load("/home/perryman1997/"
-                                         "saved_model_parameters/test71"
-                                         "/test71_epoch98.pth"))
+        model.load_state_dict(
+            torch.load(
+                "/home/perryman1997/"
+                "saved_model_parameters/test71"
+                "/test71_epoch98.pth"
+            )
+        )
 
     model.to(device).eval()
 
     # Conversion of ReLU activation function to LeakyReLU.
-    module_convertor(model,
-                     nn.ReLU,
-                     nn.LeakyReLU(inplace=True))
+    module_convertor(model, nn.ReLU, nn.LeakyReLU(inplace=True))
     # Fill Module Dict
     module_dict = module_fill(model)
     # Time logging
     since = time.time()
 
     for layer_name, layer in module_dict.items():
-    # layer = model.fc
-    # layer_name = "fc"
+        # layer = model.fc
+        # layer_name = "fc"
         # Remove outer loop if you are not interested in creating directories.
         for channel_n in range(0, layer.out_channels):
-
             # Create image object (image to parameterize, starting from noise)
             if parameterization == "pixel":
                 image_object = image_classes.Pixel_Image(shape=shape)
@@ -175,8 +177,10 @@ def main():
                 image_object = image_classes.FFT_Image(shape=shape)
                 parameter = [image_object.spectrum_random_noise]
             else:
-                sys.exit("Unsupported initial image, please select \
-                            parameterization options: 'pixel' or 'fft'!")
+                sys.exit(
+                    "Unsupported initial image, please select \
+                            parameterization options: 'pixel' or 'fft'!"
+                )
 
             # Define optimizer and pass the parameters to optimize
             optimizer = torch.optim.Adam(parameter, lr=0.05)
@@ -191,13 +195,10 @@ def main():
                     # Forward pass
                     model(transformations.standard_transforms(image_object()))
                     if multiple_objectives:
-                        loss = operation(operator,
-                                            objective(),
-                                            secondary_obj())
+                        loss = operation(operator, objective(), secondary_obj())
                         # print(loss)
                     else:
-                        loss = operation(operator,
-                                            objective())
+                        loss = operation(operator, objective())
                         # print(loss)
                     if verbose_logs and step == threshold - 1:
                         print(f"Loss at step {step}:{loss}")
@@ -209,12 +210,16 @@ def main():
             # Display final image after optimization
             display_out(image_object())
             if local_machine_results:
-                save_path = r"C:\Users\Noel\Documents\THESIS"\
-                    r"\Outputs_Feature_Visualization"\
+                save_path = (
+                    r"C:\Users\Noel\Documents\THESIS"
+                    r"\Outputs_Feature_Visualization"
                     rf"\todelete\{layer_name.replace(' ', '_')}"
+                )
             else:
-                save_path = r"/home/perryman1997"\
+                save_path = (
+                    r"/home/perryman1997"
                     rf"/outputs/test71/{layer_name.replace(' ', '_')}"
+                )
 
             check_path(save_path)
 
@@ -225,7 +230,7 @@ def main():
 
         elapsed_time = time.time() - since
         if verbose_logs:
-            print(f'Runtime: {elapsed_time}')
+            print(f"Runtime: {elapsed_time}")
 
 
 if __name__ == "__main__":

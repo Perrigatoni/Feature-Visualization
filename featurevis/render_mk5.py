@@ -9,10 +9,9 @@ import torch.nn as nn
 from PIL import Image
 from torchvision.models import list_models, get_model, resnet18
 
-import image_classes
-import transformations
+from featurevis import image_classes, transformations
 
-from objective_classes import *
+from featurevis.objective_classes import *
 
 # Execute utilizing GPU if available
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
