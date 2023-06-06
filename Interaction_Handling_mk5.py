@@ -4,7 +4,7 @@ import gradio as gr
 import torch
 import torchvision
 
-from render_mk5 import Render_Class
+from featurevis.render_mk5 import Render_Class
 
 from torchvision.models import list_models
 
@@ -52,11 +52,9 @@ def show_act_f_change(model_name):
 
 def show_saving_fields(choice):
     if choice.strip("<p>\n/").lower() == "yes":
-        return [gr.Textbox.update(visible=True),
-                gr.Textbox.update(visible=True)]
+        return [gr.Textbox.update(visible=True), gr.Textbox.update(visible=True)]
     else:
-        return [gr.Textbox.update(visible=False),
-                gr.Textbox.update(visible=False)]
+        return [gr.Textbox.update(visible=False), gr.Textbox.update(visible=False)]
 
 
 def main():
@@ -86,9 +84,7 @@ def main():
         )
         activation_func = gr.Button(value="Enforce Leaky ReLU", visible=True)
         model_selection.change(
-            fn=show_act_f_change,
-            inputs=[model_selection],
-            outputs=[activation_func]
+            fn=show_act_f_change, inputs=[model_selection], outputs=[activation_func]
         )
 
         upload = gr.UploadButton(
@@ -108,7 +104,6 @@ def main():
         # functions of class instances. Will make it much easier to retain
         # and modify information outside of gradio components.
         inputs = {}
-        output = {}
         render_instances = {}
         tabs = {}
 
@@ -125,14 +120,10 @@ def main():
                         objective_type, visible=False
                     )  # jankiest of solutions but alas...
                     parameterization = gr.Radio(
-                        choices=["fft", "pixel"],
-                        value="fft",
-                        label="Parameterization"
+                        choices=["fft", "pixel"], value="fft", label="Parameterization"
                     )
                     retain = gr.Radio(
-                        choices=["Yes", "No"],
-                        value="No",
-                        label="Save rendered output?"
+                        choices=["Yes", "No"], value="No", label="Save rendered output?"
                     )
                     saving_path = gr.Textbox(
                         label="Input absolute save path", visible=False
@@ -171,8 +162,7 @@ def main():
                         objective_type == list_of_objectives[3]
                         or objective_type == list_of_objectives[4]
                     ):
-                        layer_selection_2 = gr.Radio(choices=[],
-                                                     label="Second layer")
+                        layer_selection_2 = gr.Radio(choices=[], label="Second layer")
                         channel_selection = gr.Slider(
                             0, 511, step=1, label="Channel Number"
                         )
@@ -189,14 +179,11 @@ def main():
                         )
                         if objective_type == "Joint":
                             operator = gr.Radio(
-                                choices=["+", "-"],
-                                label="Available Operators"
+                                choices=["+", "-"], label="Available Operators"
                             )
                         else:
                             operator = gr.Radio(
-                                choices=[],
-                                label="Available Operators",
-                                visible=False
+                                choices=[], label="Available Operators", visible=False
                             )
                         inputs[objective_type] = [
                             type,
@@ -318,15 +305,12 @@ def main():
             cancel_ops = Cancels(render_instances)
             # Create actions for each Tab's selection.
             tabs[objective_type].select(
-                fn=cancel_ops.abort_all_ops,
-                inputs=None,
-                outputs=None,
-                cancels=None
+                fn=cancel_ops.abort_all_ops, inputs=None, outputs=None, cancels=None
             )
     # Set concurency N=number of objective tabs
     # Set size n=number changes needed
     print("Starting server...")
-    demo.queue(concurrency_count=15, max_size=20).launch(share=True)
+    demo.queue(concurrency_count=15, max_size=20).launch(share=False, )
 
 
 if __name__ == "__main__":
